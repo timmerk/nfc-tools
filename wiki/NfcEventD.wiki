@@ -1,0 +1,60 @@
+#summary NFC monitor daemon which able to launch modules (libraries) on action (tag entered in field or left field).
+#labels Featured
+
+== nfc-eventd ==
+*nfc-eventd* is a daemon that poll one NFC device looking for tags insertion/removes.
+When one of theses events happens, *nfc-eventd* main loop will execute the event handler function of specified NEM (Nfc Event Module) in configuration file.
+
+NEM (Nfc Event Module) could also use this configuration file like the default NEM , _nem_execute_, does.
+
+_nem_execute_ is the default NEM of *nfc-eventd*, it launch configuration specified executable file.
+
+=== Installation ===
+{{{
+svn checkout http://nfc-tools.googlecode.com/svn/trunk/nfc-eventd nfc-eventd
+cd nfc-eventd
+./autogen.sh
+make
+make install
+}}}
+
+=== Configuration ===
+Before using *nfc-eventd* you may need to configure it by editing `nfc-event.conf`.
+This file is located under `/usr/local/etc` by default (see `./configure --help` to know more about `--sysconfdir`.)
+
+Options should be self-explained but one should take your attention:
+`nfc_device` must specified an existing block configuration name. i.e. for a touchatag device:
+{{{
+device nfc_touchatag {
+    driver = "ACR122";
+}
+
+nfc_device = "nfc_touchatag";
+}}}
+
+Note: provided configuration file already have _nem_execute_ as default configuration.
+
+=== Usage ===
+Once configured, nfc-eventd only need to be launch:
+{{{
+$ nfc-eventd
+nfc-eventd 0.0.0+r42
+DEBUG:nfc-eventd.c:146: Looking for specified NFC device.
+DEBUG:nfc-eventd.c:77: Loading module: 'nem_execute'...
+DEBUG:nfc-eventd.c:82: Module found at: '/usr/lib/nfc-eventd/modules/nem_execute.so'...
+Connected to NFC device: ACR122U102 - PN532 v1.4 (0x07)
+}}}
+Note: this one have been compiled using `./autogen.sh --prefix=/usr --sysconfdir=/etc --enable-debug`
+
+And if you enter a tag in NFC device field:
+{{{
+DEBUG:nfc-eventd.c:360: Event detected: tag inserted
+DEBUG:nem_execute.c:80: tag_get_uid(0810a1a0, 0810b280, b7ee9248)
+DEBUG:nem_execute.c:83: ISO14443A (MIFARE) tag with uid=4e42047e
+DEBUG:nem_execute.c:106: ISO14443A (MIFARE) tag found: uid=0x4e42047e
+DEBUG:nem_execute.c:185: Executing action: '(echo -n 'Tag (uid=4e42047e), inserted at: ' && date) >> /tmp/nfc-eventd.log'
+DEBUG:nem_execute.c:194: Action '(echo -n 'Tag (uid=4e42047e), inserted at: ' && date) >> /tmp/nfc-eventd.log' returns 0
+DEBUG:nem_execute.c:185: Executing action: 'dcop kdesktop KScreensaverIface quit'
+DEBUG:nem_execute.c:194: Action 'dcop kdesktop KScreensaverIface quit' returns 0
+DEBUG:nfc-eventd.c:264: ISO14443A (MIFARE) tag with uid=4e42047e
+}}}
