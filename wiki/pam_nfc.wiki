@@ -1,0 +1,48 @@
+#summary Pluggable Authentication Module which allow to login using NFC targets.
+#labels Featured
+
+= Installation =
+*pam_nfc* depends on development version of *libnfc*, so you need to fetch, compile and install it.
+
+To build *pam_nfc*, you have to checkout sources:
+{{{
+svn checkout http://nfc-tools.googlecode.com/svn/trunk/pam_nfc
+cd pam_nfc
+}}}
+
+== Compilation ==
+Once fetched, you can now compile *pam_nfc* using usual autotools way:
+
+=== Under GNU/Linux based system ===
+{{{
+autoreconf -vis
+./configure --prefix=/usr --sysconfdir=/etc --with-pam-dir=/lib/security
+make
+sudo make install
+}}}
+
+=== Under BSD based system ===
+{{{
+autoreconf -vis
+./configure --with-pam-dir=/usr/local/lib CFLAGS="-I/usr/local/include -ggdb" LDFLAGS="-L/usr/local/lib"
+make
+sudo make install
+}}}
+
+== Setup ==
+Now, *pam_nfc* is installed in your system but you need to setup PAM files to allow the use of *pam_nfc*.
+This configuration depends on your needs but usually *pam_nfc* is used to be able to system login using a tag.
+You just need to add this line:
+{{{
+auth         sufficient pam_nfc.so
+}}}
+in the right place like: `/etc/pam.d/login` or `/etc/pam.d/kdm`.
+
+= Usage =
+
+== Enroll user ==
+To use *pam_nfc*, you need to associate users and tags. To do that, simply put the wanted tag and launch:
+{{{
+pam-nfc-add <user>
+}}}
+This tool will "enroll" tag with corresponding user.
