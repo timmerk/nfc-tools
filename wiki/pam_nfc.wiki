@@ -21,12 +21,12 @@ make
 sudo make install
 }}}
 
-=== Under BSD based system ===
+=== Under `*`BSD based system ===
 {{{
 autoreconf -vis
-./configure --with-pam-dir=/usr/local/lib CFLAGS="-I/usr/local/include -ggdb" LDFLAGS="-L/usr/local/lib"
-make
-sudo make install
+./configure --with-pam-dir=/usr/local/lib CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
+gmake
+sudo gmake install
 }}}
 
 == Setup ==
