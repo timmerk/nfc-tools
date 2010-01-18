@@ -3,7 +3,7 @@
 
 = Introduction =
 
-The libmifare_ project aims to provide a convenient API for MIFARE card manipulations.
+The _libfreefare_ project aims to provide a convenient API for MIFARE card manipulations.
 
 = Feature matrix =
 
