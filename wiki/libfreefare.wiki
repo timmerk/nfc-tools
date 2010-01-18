@@ -1,4 +1,5 @@
 #summary Library for high level manipulation of MIFARE cards.
+#labels Featured
 
 = Introduction =
 
