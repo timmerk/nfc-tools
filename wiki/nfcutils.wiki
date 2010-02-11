@@ -2,10 +2,23 @@
 #labels Featured
 
 = Installation =
+== Stable release ==
+Download the lastest nfcutils tarball from *Downloads* section.
+
+{{{
+tar xvzf nfcutils-*.tar.gz
+cd nfcutils
+./configure
+make
+make install
+}}}
+
+== Development ==
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/nfcutils nfcutils
 cd nfcutils
 autoreconf -vis
+./configure
 make
 make install
 }}}
