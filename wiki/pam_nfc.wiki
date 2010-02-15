@@ -1,8 +1,15 @@
 #summary Pluggable Authentication Module which allow to login using NFC targets.
 #labels Featured
 
-= Installation =
-*pam_nfc* depends on development version of *libnfc*, so you need to fetch, compile and install it.
+= Introduction =
+== Stable version ==
+*pam_nfc* stable version can be downloaded at *Downloads* section.
+As usual, you will have to extract, compile and install pam_nfc to use it.
+
+Actual pam_nfc 0.1.0 version run on top of libnfc 1.3.x version.
+
+== Develoment version ==
+*pam_nfc* development version depends on development version of *libnfc*, so you need to fetch, compile and install it.
 
 To build *pam_nfc*, you have to checkout sources:
 {{{
@@ -10,26 +17,29 @@ svn checkout http://nfc-tools.googlecode.com/svn/trunk/pam_nfc
 cd pam_nfc
 }}}
 
-== Compilation ==
-Once fetched, you can now compile *pam_nfc* using usual autotools way:
-
-=== Under GNU/Linux based system ===
+Before compile it, remember to run 
 {{{
 autoreconf -vis
+}}}
+
+= Compilation =
+Once fetched, you can now compile *pam_nfc* using usual autotools way:
+
+== Under GNU/Linux based system ==
+{{{
 ./configure --prefix=/usr --sysconfdir=/etc --with-pam-dir=/lib/security
 make
 sudo make install
 }}}
 
-=== Under `*`BSD based system ===
+== Under `*`BSD based system ==
 {{{
-autoreconf -vis
 ./configure --with-pam-dir=/usr/local/lib CFLAGS="-I/usr/local/include" LDFLAGS="-L/usr/local/lib"
 gmake
 sudo gmake install
 }}}
 
-== Setup ==
+= Setup =
 Now, *pam_nfc* is installed in your system but you need to setup PAM files to allow the use of *pam_nfc*.
 This configuration depends on your needs but usually *pam_nfc* is used to be able to system login using a tag.
 You just need to add this line:
