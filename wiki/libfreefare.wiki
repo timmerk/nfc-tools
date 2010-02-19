@@ -9,10 +9,18 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 
 <table>
 <tr><th colspan="2">Tags</th></tr>
-<tr><td>MIFARE Ultralight</td><td style="background-color: #ffaaaa">Supported</td></tr>
 <tr><td>MIFARE Classic 1k</td><td style="background-color: #aaffaa">Supported</td></tr>
 <tr><td>MIFARE Classic 4k</td><td style="background-color: #ffffaa">WIP</td></tr>
-<tr><td>MIFARE DESFire</td>   <td style="background-color: #ffffaa">WIP</td></tr>
+<tr><td>MIFARE DESFire 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE DESFire 4k</td>   <td style="background-color: #ffffaa">WIP</td></tr>
+<tr><td>MIFARE DESFire 8k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE Mini</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE Plus S 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE Plus S 4k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE Plus X 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE Plus X 4k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
+<tr><td>MIFARE Ultralight</td><td style="background-color: #aaffaa">Supported</td></tr>
+<tr><td>MIFARE Ultralight C</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
 <tr><th colspan="2">Support</th></tr>
 <tr><td>Mifare Application Directory (MAD) v1</td><td style="background-color: #aaffaa">Supported</td></tr>
 <tr><td>Mifare Application Directory (MAD) v2</td><td style="background-color: #ffffaa">WIP</td></tr>
