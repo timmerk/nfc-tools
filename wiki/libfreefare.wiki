@@ -44,7 +44,7 @@ autoreconf -vis
 Once fetched, you can now compile *libfreefare* using usual autotools way:
 
 {{{
-./configure --prefix=/usr --sysconfdir=/etc --with-pam-dir=/lib/security
+./configure
 make
 sudo make install
 }}}
