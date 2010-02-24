@@ -25,4 +25,26 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 <tr><td>Mifare Application Directory (MAD) v1</td><td style="background-color: #aaffaa">Supported</td></tr>
 <tr><td>Mifare Application Directory (MAD) v2</td><td style="background-color: #ffffaa">WIP</td></tr>
 <tr><td>Mifare Application Directory (MAD) v3</td><td style="background-color: #ffaaaa">Not supported</td></tr>
-</table> 
+</table>
+
+= Installation =
+ATM, you will need to compile development version since there is no release of libfreefare yet.
+
+First you have to checkout sources:
+{{{
+svn checkout http://nfc-tools.googlecode.com/svn/trunk/libfreefare
+cd libfreefare
+}}}
+
+Before compile it, remember to run 
+{{{
+autoreconf -vis
+}}}
+
+Once fetched, you can now compile *libfreefare* using usual autotools way:
+
+{{{
+./configure --prefix=/usr --sysconfdir=/etc --with-pam-dir=/lib/security
+make
+sudo make install
+}}}
