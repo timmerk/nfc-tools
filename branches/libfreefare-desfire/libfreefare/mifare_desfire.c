@@ -50,13 +50,7 @@
 
 #define DESFIRE_TRANSCEIVE(tag, msg, msg_len, res, res_len) \
     do { \
-	if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, msg_len, res, &res_len))) \
-	    return errno = EIO, -1; \
-	if ((1 == res_len) && (OPERATION_OK != res[0])) \
-	    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
-    } while (0)
-#define XXXDESFIRE_TRANSCEIVE(tag, msg, msg_len, res, res_len) \
-    do { \
+	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK; \
         hexdump (msg, msg_len, "---> ", 0); \
 	if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, msg_len, res, &res_len))) \
 	    return errno = EIO, -1; \
