@@ -1,9 +1,15 @@
 
-ACLOCAL_AMFLAGS = -I m4
+AM_CFLAGS = -I. @LIBNFC_CFLAGS@
+AM_LDFLAGS = @LIBNFC_LIBS@
 
-SUBDIRS = libfreefare test examples
+lib_LTLIBRARIES = libfreefare.la
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libfreefare.pc
+libfreefare_la_SOURCES = freefare.c \
+			 mifare_classic.c \
+			 mifare_ultralight.c \
+			 mad.c \
+			 mifare_application.c
+libfreefare_la_HEADERS = freefare.h
+libfreefare_ladir = $(includedir)
 
-
+EXTRA_DIST = freefare_internal.h
