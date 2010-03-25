@@ -1,0 +1,26 @@
+
+=================================== BEWARE! ===================================
+  This is a *DEVELOPMENT* branch of the *DEVELOPMENT* trunk of libfreefare!
+  While the trunk trends to be somewhat stable and tested code, this branch
+  holds experimental and work-in-progress developments.
+
+  This means NO SUPPORT AT ALL!
+=================================== BEWARE! ===================================
+
+PREREQUISITES
+
+  Since the libnfc has an ISO/IEC 144443 CRC built-in that is required for
+  some Mifare DESFire operations, the libnfc-r324-export-iso14443a_crc.patch
+  patch has to be applied to the libnfc's trunk before attempting to compile
+  this library.
+
+MISCELLANEOUS
+
+  To ease up development, the FreeBSD's hexdump(1) code has been included in
+  this source tree.  If you are running a system which provides this function
+  in libutil (at least FreeBSD), edit the libfreefare/Makefile.am file to suit
+  your system's settings.
+
+  The BSD-licensed files included for the debugging purpose are:
+    - libutil.h
+    - libfreefare/hexdump.c

@@ -29,6 +29,8 @@ setup ()
 {
     int res;
 
+    tag = NULL;
+
     device = nfc_connect (NULL);
     cut_assert_not_null (device, cut_message ("No NFC device found"));
 
@@ -37,33 +39,26 @@ setup ()
 
     tag = NULL;
     for (int i=0; tags[i]; i++) {
-	if ((freefare_get_tag_type(tags[i]) == CLASSIC_1K) ||
-	     (freefare_get_tag_type(tags[i]) == CLASSIC_4K)) {
+	if (freefare_get_tag_type(tags[i]) == DESFIRE_4K) {
 	    tag = tags[i];
 	    break;
 	}
     }
 
-    if (!tag) {
-	cut_pend ("No MIFARE Classic tag on NFC device");
-    }
+    cut_assert_not_null (tag, cut_message ("No MIFARE DESFire tag on NFC device"));
 
-    cut_assert_not_null (tag, cut_message ("No MIFARE Classic tag on NFC device"));
-
-    res = mifare_classic_connect (tag);
-    cut_assert_equal_int (0, res, cut_message ("mifare_classic_connect() failed"));
+    res = mifare_desfire_connect (tag);
+    cut_assert_equal_int (0, res, cut_message ("mifare_desfire_connect() failed"));
 }
 
 void
 teardown ()
 {
     if (tag)
-	mifare_classic_disconnect (tag);
+	mifare_desfire_disconnect (tag);
 
-    if (tags) {
+    if (tags)
 	freefare_free_tags (tags);
-	tags = NULL;
-    }
 
     if (device)
 	nfc_disconnect (device);

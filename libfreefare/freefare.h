@@ -1,5 +1,5 @@
 /*-
- * Copyright (C) 2009, Romain Tartiere, Romuald Conty.
+ * Copyright (C) 2009, 2010, Romain Tartiere, Romuald Conty.
  * 
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the
@@ -41,7 +41,7 @@ enum mifare_tag_type {
 //    PLUS_X2K,
 //    PLUS_X4K,
 //    DESFIRE_2K,
-//    DESFIRE_4K,
+    DESFIRE_4K,
 //    DESFIRE_8K
 };
 
@@ -142,9 +142,66 @@ void		 mifare_application_free (Mad mad, MadAid aid);
 
 MifareSectorNumber *mifare_application_find (Mad mad, MadAid aid);
 
+#define	OPERATION_OK		0x00
+#define	NO_CHANGES		0x0C
+#define	OUT_OF_EEPROM_ERROR	0x0E
+#define	ILLEGAL_COMMAND_CODE	0x1C
+#define	INTEGRITY_ERROR		0x1E
+#define	NO_SUCH_KEY		0x40
+#define	LENGTH_ERROR		0x7E
+#define	PERMISSION_ERROR	0x9D
+#define	PARAMETER_ERROR		0x9E
+#define	APPLICATION_NOT_FOUND	0xA0
+#define	APPL_INTEGRITY_ERROR	0xA1
+#define	AUTHENTICATION_ERROR	0xAE
+#define	ADDITIONAL_FRAME	0xAF
+#define	BOUNDARY_ERROR		0xBE
+#define	PICC_INTEGRITY_ERROR	0xC1
+#define	COMMAND_ABORTED		0xCA
+#define	PICC_DISABLED_ERROR	0xCD
+#define	COUNT_ERROR		0xCE
+#define	DUPLICATE_ERROR		0xDE
+#define	EEPROM_ERROR		0xEE
+#define	FILE_NOT_FOUND		0xF0
+#define	FILE_INTEGRITY_ERROR	0xF1
+
+struct mifare_desfire_aid;
+typedef struct mifare_desfire_aid *MifareDESFireAID;
+
+MifareDESFireAID mifare_desfire_aid_new (uint8_t application_code, uint8_t function_cluster_code, uint8_t n);
+MifareDESFireAID mifare_desfire_card_level_aid_new (void);
+MifareDESFireAID mifare_desfire_aid_new_with_mad_aid (MadAid mad_aid, uint8_t n);
+
+struct mifare_desfire_key;
+typedef struct mifare_desfire_key *MifareDESFireKey;
+
+int		 mifare_desfire_connect (MifareTag tag);
+int		 mifare_desfire_disconnect (MifareTag tag);
+uint8_t	 	 mifare_desfire_get_last_error (MifareTag tag);
+int		 mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
+int		 mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_keys);
+
+
+int		 mifare_desfire_change_key_settings (MifareTag tag);
+int		 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version);
+
+int		 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
+int		 mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no);
+int		 mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid);
+int		 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid);
+
+MifareDESFireKey mifare_desfire_des_key_new (uint8_t value[8]);
+MifareDESFireKey mifare_desfire_3des_key_new (uint8_t value[16]);
+MifareDESFireKey mifare_desfire_des_key_new_with_version (uint8_t value[8]);
+MifareDESFireKey mifare_desfire_3des_key_new_with_version (uint8_t value[16]);
+uint8_t		 mifare_desfire_key_get_version (MifareDESFireKey key);
+void		 mifare_desfire_key_set_version (MifareDESFireKey key, uint8_t version);
+void		 mifare_desfire_key_free (MifareDESFireKey key);
+
+const char	*desfire_error_lookup (uint8_t error);
+
 #ifdef __cplusplus
     }
 #endif // __cplusplus
-
 
 #endif /* !__FREEFARE_H__ */

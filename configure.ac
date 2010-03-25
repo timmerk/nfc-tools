@@ -39,6 +39,10 @@ AC_DEFINE([_XOPEN_SOURCE], [600], [Define to 500 if Single Unix conformance is w
 
 CFLAGS="$CFLAGS -std=c99"
 
+# Crypto functions for MIFARE DesFire support are provided by OpenSSL.
+AC_CHECK_LIB([ssl], [DES_ecb_encrypt], [], [AC_MSG_ERROR([Cannot find libssl.])])
+AC_CHECK_HEADER([openssl/des.h], [], [AC_MSG_ERROR([Cannot find libssl headers.])])
+
 # Checks for pkg-config modules.
 PKG_CHECK_MODULES([LIBNFC], [libnfc], [], [AC_MSG_ERROR([libnfc is mandatory.])])
 
@@ -54,5 +58,9 @@ if test x$ac_cv_enable_coverage = xyes; then
     CFLAGS="$CFLAGS -O0 -fprofile-arcs -ftest-coverage"
 fi
 
-AC_OUTPUT([Makefile examples/Makefile libfreefare/Makefile libfreefare.pc test/Makefile])
+AC_OUTPUT([Makefile
+	   examples/Makefile
+	   libfreefare/Makefile
+	   libfreefare.pc
+	   test/Makefile])
 
