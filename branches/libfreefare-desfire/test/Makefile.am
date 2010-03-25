@@ -16,6 +16,9 @@ noinst_LTLIBRARIES = \
 		     test_mifare_classic.la \
 		     test_mifare_classic_create_trailer_block.la \
 		     test_mifare_classic_application.la \
+		     test_mifare_desfire.la \
+		     test_mifare_desfire_des.la \
+		     test_mifare_desfire_key.la \
 		     test_mifare_ultralight.la
 
 AM_LDFLAGS = -module -rpath $(libdir) -avoid-version -no-undefined
@@ -33,6 +36,17 @@ test_mifare_classic_create_trailer_block_la_LIBADD = $(top_builddir)/libfreefare
 
 test_mifare_classic_application_la_SOURCES = test_mifare_classic_application.c
 test_mifare_classic_application_la_LIBADD = $(top_builddir)/libfreefare/libfreefare.la
+
+test_mifare_desfire_la_SOURCES = test_mifare_desfire.c \
+				 mifare_desfire_fixture.c \
+				 mifare_desfire_fixture.h
+test_mifare_desfire_la_LIBADD = $(top_builddir)/libfreefare/libfreefare.la -lutil
+
+test_mifare_desfire_des_la_SOURCES = test_mifare_desfire_des.c
+test_mifare_desfire_des_la_LIBADD = $(top_builddir)/libfreefare/libfreefare.la -lssl
+
+test_mifare_desfire_key_la_SOURCES = test_mifare_desfire_key.c
+test_mifare_desfire_key_la_LIBADD = $(top_builddir)/libfreefare/libfreefare.la
 
 test_mifare_ultralight_la_SOURCES = test_mifare_ultralight.c \
 				    mifare_ultralight_fixture.c \
