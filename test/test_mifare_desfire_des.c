@@ -21,8 +21,6 @@
 #include <freefare.h>
 #include "freefare_internal.h"
 
-#include <rpc/des_crypt.h>
-
 void
 test_mifare_rol8 (void)
 {

@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <rpc/des_crypt.h>
 
 #include <freefare.h>
 #include "freefare_internal.h"
