@@ -480,6 +480,29 @@ mifare_desfire_format_picc (MifareTag tag)
     return 0;
 }
 
+int
+mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *info)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    uint8_t cmd[1] = { 0x60 };
+    uint8_t res[8+8+15];
+    size_t n;
+
+    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    memcpy (&(info->hardware), res+1, 7);
+
+    cmd[0] = 0xAF;
+    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    memcpy (&(info->software), res+1, 7);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    memcpy (&(info->uid), res+1, 14);
+
+    return 0;
+}
+
 
 
 /*
