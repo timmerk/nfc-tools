@@ -180,17 +180,6 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     MIFARE_DESFIRE (tag)->authenticated_key_no = NOAUTH;
     MIFARE_DESFIRE (tag)->session_key->type = T_NONE;
 
-    //uint8_t key[8];
-    //memset (key, '\0', sizeof (key));
-
-#if 0
-    /*
-     * Parity bits of DES keys are used for key versionning.
-     */
-    DES_set_odd_parity ((DES_cblock *)&key);
-#endif
-
-
     hexdump (key, 8, "key                   ", 0);
 
     uint8_t command[2];
@@ -199,21 +188,6 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t status[9];
     size_t n;
-#if 0
-    hexdump (command, sizeof (command), "<---                  ", 0);
-    if (!(nfc_initiator_transceive_dep_bytes (tag->device, command, sizeof (command), status, &n))) {
-	tag->active = false; /* Tag is no more active if authentication failed. */
-	errno = EIO;
-	return -1;
-    }
-
-    if (n == 1) {
-	tag->last_picc_error = status[0];
-	return -1;
-    }
-
-    hexdump (status, n, "--->                  ", 0);
-#endif
     DESFIRE_TRANSCEIVE (tag, command, sizeof (command), status, n);
 
 
@@ -248,22 +222,6 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     msg[0] = 0xAF;
     memcpy (msg + 1, token, 16);
 
-#if 0
-    hexdump (msg, sizeof (msg), "<---                  ", 0);
-
-    if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, sizeof (msg), status, &n))) {
-	tag->active = false; /* Tag is no more active if authentication failed. */
-	errno = EIO;
-	return -1;
-    }
-
-    hexdump (status, n, "--->                  ", 0);
-
-    if (n == 1) {
-	tag->last_picc_error = status[0];
-	return -1;
-    }
-#endif
     DESFIRE_TRANSCEIVE (tag, msg, sizeof (msg), status, n);
 
     uint8_t PICC_E_RndA_s[8];
@@ -384,13 +342,11 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
     hexdump (cmd, sizeof (cmd), "mifare_desfire_change_key (raw): ", 0);
 
     mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 24, MD_SEND);
-    
+
     hexdump (cmd, sizeof (cmd), "mifare_desfire_change_key (des): ", 0);
 
     DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
 
-
-    
     return 0;
 }
 
@@ -481,7 +437,6 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids, size_
     }
 
     return 0;
-    
 }
 
 void
