@@ -416,7 +416,7 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], siz
     DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
     *count = (n-1)/3;
     *aids = malloc ((*count + 1) * sizeof (MifareDESFireAID));
-    for (int i = 0; (3*i + 1) < n; i++) {
+    for (size_t i = 0; (3*i + 1) < n; i++) {
 	(*aids)[i] = memdup (res + 3*i + 1, 3);
     }
 
@@ -429,7 +429,7 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], siz
 	if ((p = realloc (*aids, (*count + 1) * sizeof (MifareDESFireAID)))) {
 	    *aids = p;
 
-	    for (int i = 0; (3*i + 1) < n; i++) {
+	    for (size_t i = 0; (3*i + 1) < n; i++) {
 		(*aids)[19+i] = memdup (res + 3*i + 1, 3);
 	    }
 	}
