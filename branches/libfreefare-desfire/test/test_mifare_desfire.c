@@ -49,8 +49,35 @@ test_mifare_desfire_change_key_settings (void)
 {
     int res;
 
-    res = mifare_desfire_change_key_settings (tag);
-    cut_assert_equal_int (0, res, cut_message ("mifare_desfire_change_key_settings() failed"));
+    MifareDESFireKey default_key = mifare_desfire_des_key_new_with_version (null_key_data);
+    MifareDESFireAID aid = mifare_desfire_aid_new (1, 2, 0);
+
+    res = mifare_desfire_authenticate (tag, 0, default_key);
+    cut_assert_success (tag, "mifare_desfire_authenticate()");
+
+    res = mifare_desfire_create_application (tag, aid, 0x0f, 1);
+    if (res < 0)
+	cut_notify ("mifare_desfire_create_application() failed");
+
+    res = mifare_desfire_select_application (tag, aid);
+    cut_assert_success (tag, "mifare_desfire_select_application()");
+
+    // Authenticate on the application
+    res = mifare_desfire_authenticate (tag, 0, default_key);
+    cut_assert_success (tag, "mifare_desfire_authenticate()");
+
+    uint8_t settings;
+    res = mifare_desfire_get_key_settings (tag, &settings, NULL);
+    cut_assert_success (tag, "mifare_desfire_get_key_settings()");
+
+    res = mifare_desfire_change_key_settings (tag, settings);
+    cut_assert_success (tag, "mifare_desfire_change_key_settings()");
+
+    res = mifare_desfire_delete_application (tag, aid);
+    cut_assert_success (tag, "mifare_desfire_delete_application()");
+
+    free (aid);
+    mifare_desfire_key_free (default_key);
 }
 
 void

@@ -182,7 +182,7 @@ int		 mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireK
 int		 mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_keys);
 
 
-int		 mifare_desfire_change_key_settings (MifareTag tag);
+int		 mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings);
 int		 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version);
 
 int		 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
