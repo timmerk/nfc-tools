@@ -27,6 +27,7 @@
 #include "freefare_internal.h"
 
 static void	 xor8 (uint8_t *ivect, uint8_t *data);
+void		 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction);
 
 static void
 xor8 (uint8_t *ivect, uint8_t *data)
@@ -47,10 +48,11 @@ rol8(uint8_t *data)
 }
 
 void
-mifare_cbc_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction)
+mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction)
 {
     /*
      * FIXME Should we change the way errors traverse this function?
+     * TODO Also handle 3DES keys!
      */
     uint8_t ovect[8];
 
@@ -65,8 +67,6 @@ mifare_cbc_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirec
 
     uint8_t edata[8];
     DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &ks, DES_DECRYPT);
-//    stat = ecb_crypt (key->data, data, 8, DES_HW | DES_DECRYPT);
-//
     memcpy (data, edata, 8);
 
     if (direction == MD_SEND) {
@@ -75,4 +75,18 @@ mifare_cbc_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirec
 	xor8 (ivect, data);
 	memcpy (ivect, ovect, 8);
     }
+}
+
+void
+mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, MifareDirection direction)
+{
+    size_t offset = 0;
+    uint8_t ivect[8];
+    memset (&ivect, '\0', sizeof (ivect));
+
+    while (offset < data_size) {
+	mifare_des (key, data + offset, ivect, direction);
+	offset += 8;
+    }
+
 }

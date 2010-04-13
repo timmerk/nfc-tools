@@ -182,7 +182,6 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     //uint8_t key[8];
     //memset (key, '\0', sizeof (key));
-    uint8_t ivec[8];
 
 #if 0
     /*
@@ -191,10 +190,8 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     DES_set_odd_parity ((DES_cblock *)&key);
 #endif
 
-    memset (ivec, '\0', sizeof (ivec));
 
     hexdump (key, 8, "key                   ", 0);
-    hexdump (ivec, 8, "ivec                  ", 0);
 
     uint8_t command[2];
     command[0] = 0x0A;
@@ -226,7 +223,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t PICC_RndB[8];
     memcpy (PICC_RndB, PICC_E_RndB, 8);
-    mifare_cbc_des (key, PICC_RndB, ivec, MD_RECEIVE);
+    mifare_cbc_des (key, PICC_RndB, 8, MD_RECEIVE);
     hexdump (PICC_RndB, sizeof (PICC_RndB), "  PICC_RndB           ", 0);
 
     uint8_t PCD_RndA[8];
@@ -243,9 +240,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     hexdump (token, sizeof (token), "  PCD_RndA+PCD_RndB'  ", 0);
 
-    memset (ivec, '\0', sizeof (ivec));
-    mifare_cbc_des (key, token, ivec, MD_SEND);
-    mifare_cbc_des (key, token+8, ivec, MD_SEND);
+    mifare_cbc_des (key, token, 16, MD_SEND);
 
     hexdump (token, sizeof (token), "d(PCD_RndA+PCD_RndB') ", 0);
 
@@ -277,8 +272,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t PICC_RndA_s[8];
     memcpy (PICC_RndA_s, PICC_E_RndA_s, 8);
-    memset (ivec, '\0', sizeof (ivec));
-    mifare_cbc_des (key, PICC_RndA_s, ivec, MD_RECEIVE);
+    mifare_cbc_des (key, PICC_RndA_s, 8, MD_RECEIVE);
     hexdump (PICC_RndA_s, sizeof (PICC_RndA_s), "  PICC_RndA'          ", 0);
 
     uint8_t PCD_RndA_s[8];
@@ -320,9 +314,7 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
     iso14443a_crc (data, 1, data + 1);
     memset (data+3, '\0', 5);
 
-    uint8_t ivec[8];
-    memset (ivec, '\0', sizeof (ivec));
-    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, ivec, MD_SEND);
+    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND);
 
     DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
 
@@ -391,12 +383,7 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
 
     hexdump (cmd, sizeof (cmd), "mifare_desfire_change_key (raw): ", 0);
 
-    uint8_t ivec[8];
-    memset (ivec, '\0', sizeof (ivec));
-
-    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data,    ivec, MD_SEND);
-    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data+8,  ivec, MD_SEND);
-    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data+16, ivec, MD_SEND);
+    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 24, MD_SEND);
     
     hexdump (cmd, sizeof (cmd), "mifare_desfire_change_key (des): ", 0);
 
