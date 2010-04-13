@@ -105,7 +105,11 @@ struct mifare_desfire_aid {
 
 struct mifare_desfire_key {
     uint8_t data[16];
-    enum { T_DES, T_3DES } type;
+    enum {
+	T_NONE,
+	T_DES,
+	T_3DES
+    } type;
 };
 
 struct mifare_desfire_tag {
@@ -113,7 +117,7 @@ struct mifare_desfire_tag {
 
     uint8_t last_picc_error;
     char *last_pcd_error;
-    MifareDESFireKey current_key;
+    MifareDESFireKey session_key;
     uint8_t authenticated_key_no;
 };
 
