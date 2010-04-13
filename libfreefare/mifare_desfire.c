@@ -350,7 +350,6 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
     return 0;
 }
 
-
 int
 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version)
 {
@@ -480,6 +479,8 @@ mifare_desfire_format_picc (MifareTag tag)
 
     return 0;
 }
+
+
 
 /*
  * UID accessor

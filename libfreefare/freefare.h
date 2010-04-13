@@ -178,21 +178,19 @@ typedef struct mifare_desfire_key *MifareDESFireKey;
 int		 mifare_desfire_connect (MifareTag tag);
 int		 mifare_desfire_disconnect (MifareTag tag);
 uint8_t	 	 mifare_desfire_get_last_error (MifareTag tag);
+
 int		 mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
-int		 mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_keys);
-
-
 int		 mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings);
-int		 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version);
-
+int		 mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_keys);
 int		 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
+int		 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version);
 int		 mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no);
 int		 mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid);
-int		 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid);
 int		 mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], size_t *count);
 void		 mifare_desfire_free_application_ids (MifareDESFireAID aids[]);
-
+int		 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid);
 int		 mifare_desfire_format_picc (MifareTag tag);
+
 char		*mifare_desfire_get_uid(MifareTag tag);
 
 MifareDESFireKey mifare_desfire_des_key_new (uint8_t value[8]);
