@@ -189,6 +189,7 @@ int		 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey
 int		 mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no);
 int		 mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid);
 int		 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid);
+char		*mifare_desfire_get_uid(MifareTag tag);
 
 MifareDESFireKey mifare_desfire_des_key_new (uint8_t value[8]);
 MifareDESFireKey mifare_desfire_3des_key_new (uint8_t value[16]);
