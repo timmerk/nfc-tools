@@ -35,17 +35,15 @@ test_mifare_desfire_des_receive (void)
     uint8_t data[8]  = { 0xd6, 0x59, 0xe1, 0x70, 0x43, 0xa8, 0x40, 0x68 };
     uint8_t key_data[8]   = { 1, 1, 1, 1, 1, 1, 1, 1 };
     MifareDESFireKey key = mifare_desfire_des_key_new_with_version (key_data);
-    uint8_t ivect[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
     uint8_t expected_data[8]  = { 0x73, 0x0d, 0xdf, 0xad, 0xa4, 0xd2, 0x07, 0x89 };
     uint8_t expected_key[8]   = { 1, 1, 1, 1, 1, 1, 1, 1 };
     uint8_t expected_ivect[8] = { 0xd6, 0x59, 0xe1, 0x70, 0x43, 0xa8, 0x40, 0x68 };
 
-    mifare_cbc_des (key, data, ivect, MD_RECEIVE);
+    mifare_cbc_des (key, data, 8, MD_RECEIVE);
 
     cut_assert_equal_memory (&expected_data,  8, &data,       8, cut_message ("Wrong data"));
     cut_assert_equal_memory (&expected_key,   8, key->data,   8, cut_message ("Wrong key"));
-    cut_assert_equal_memory (&expected_ivect, 8, &ivect,      8, cut_message ("Wrong ivect"));
 
     mifare_desfire_key_free (key);
 }
@@ -57,17 +55,15 @@ test_mifare_desfire_des_send (void)
     uint8_t data[8]  = { 0x0d, 0xdf, 0xad, 0xa4, 0xd2, 0x07, 0x89, 0x73 };
     uint8_t key_data[8]   = { 1, 1, 1, 1, 1, 1, 1, 1 };
     MifareDESFireKey key = mifare_desfire_des_key_new_with_version (key_data);
-    uint8_t ivect[8] = { 0xf4, 0xcd, 0x0c, 0x06, 0x4e, 0x06, 0x87, 0x83 };
 
     uint8_t expected_data[8]  = { 0x5d, 0xe5, 0x9f, 0xa5, 0x9e, 0x46, 0xad, 0x10 };
     uint8_t expected_key[8]   = { 1, 1, 1, 1, 1, 1, 1, 1 };
     uint8_t expected_ivect[8] = { 0x5d, 0xe5, 0x9f, 0xa5, 0x9e, 0x46, 0xad, 0x10 };
 
-    mifare_cbc_des (key, data, ivect, MD_SEND);
+    mifare_cbc_des (key, data, 8, MD_SEND);
 
     cut_assert_equal_memory (&expected_data,  8, &data,       8, cut_message ("Wrong data"));
     cut_assert_equal_memory (&expected_key,   8, key->data,   8, cut_message ("Wrong key"));
-    cut_assert_equal_memory (&expected_ivect, 8, &ivect,      8, cut_message ("Wrong ivect"));
 
     mifare_desfire_key_free (key);
 }

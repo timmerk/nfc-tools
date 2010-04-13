@@ -56,7 +56,7 @@ typedef enum {
     MD_RECEIVE
 } MifareDirection;
 
-void		 mifare_cbc_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction);
+void		 mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, MifareDirection direction);
 void		 rol8(uint8_t *data);
 
 #define MIFARE_ULTRALIGHT_PAGE_COUNT 16
