@@ -304,15 +304,29 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 }
 
 int
-mifare_desfire_change_key_settings (MifareTag tag)
+mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
+    ASSERT_AUTHENTICATED (tag);
 
-    /* TODO */
+    uint8_t cmd[9] = { 0x54 };
+    uint8_t res[1];
+    size_t n;
 
-    errno = ENOTSUP;
-    return -1;
+    uint8_t *data = cmd + 1;
+
+    data[0] = settings;
+    iso14443a_crc (data, 1, data + 1);
+    memset (data+3, '\0', 5);
+
+    uint8_t ivec[8];
+    memset (ivec, '\0', sizeof (ivec));
+    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, ivec, MD_SEND);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+
+    return 0;
 }
 
 int
