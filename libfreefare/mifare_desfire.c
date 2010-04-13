@@ -461,6 +461,22 @@ mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
     return 0;
 }
 
+int
+mifare_desfire_format_picc (MifareTag tag)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+    ASSERT_AUTHENTICATED (tag);
+
+    uint8_t cmd[1] = { 0xFC };
+    uint8_t res[1];
+    size_t n;
+
+    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+
+    return 0;
+}
+
 /*
  * UID accessor
  */
