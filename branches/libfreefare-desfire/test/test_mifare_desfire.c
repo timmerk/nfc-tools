@@ -103,6 +103,7 @@ test_mifare_desfire_create_application (void)
     // Create an AID
     MifareDESFireAID aid = mifare_desfire_aid_new (1, 2, 0);
     cut_assert_not_null (aid, cut_message ("mifare_desfire_aid_new() failed"));
+
     // Authenticate
     MifareDESFireKey default_key = mifare_desfire_des_key_new_with_version (null_key_data);
     res = mifare_desfire_authenticate (tag, 0, default_key);
@@ -219,4 +220,68 @@ test_mifare_desfire_get_key_version (void)
     cut_assert_equal_int (0, res, cut_message ("mifare_desfire_authenticate() failed"));
 
     cut_assert_equal_int (0, version, cut_message ("Wrong default key version"));
+}
+
+void
+test_mifare_desfire_get_application_ids (void)
+{
+    int res;
+
+    MifareDESFireAID *aids;
+    size_t count;
+
+    /* TODO Check everything is fine with more applications. */
+
+    res = mifare_desfire_get_application_ids (tag, &aids, &count);
+    cut_assert_equal_int (0, res, cut_message ("mifare_desfire_get_application_ids() failed"));
+
+    cut_assert_equal_int (0, count, cut_message ("No application should exist"));
+
+    mifare_desfire_free_application_ids (aids);
+
+    // Create an AID
+    MifareDESFireAID aid = mifare_desfire_aid_new (1, 2, 0);
+    cut_assert_not_null (aid, cut_message ("mifare_desfire_aid_new() failed"));
+
+    // Authenticate
+    MifareDESFireKey default_key = mifare_desfire_des_key_new_with_version (null_key_data);
+    res = mifare_desfire_authenticate (tag, 0, default_key);
+    cut_assert_success (tag, "mifare_desfire_authenticate()");
+    
+    // Create an application
+    res = mifare_desfire_create_application (tag, aid, 0x0f, 1);
+    cut_assert_success (tag, "mifare_desfire_create_application()");
+
+    // Select the application
+    res = mifare_desfire_select_application (tag, aid);
+    cut_assert_success (tag, "mifare_desfire_create_application()");
+
+    // Authenticate on the application
+    res = mifare_desfire_authenticate (tag, 0, default_key);
+    cut_assert_success (tag, "mifare_desfire_authenticate()");
+
+    // Select the master plop
+    MifareDESFireAID root = mifare_desfire_card_level_aid_new ();
+    res = mifare_desfire_select_application (tag, root);
+    cut_assert_success (tag, "mifare_desfire_select_application()");
+
+    res = mifare_desfire_get_application_ids (tag, &aids, &count);
+    cut_assert_equal_int (0, res, cut_message ("mifare_desfire_get_application_ids() failed"));
+
+    cut_assert_equal_int (1, count, cut_message ("One application should exist"));
+
+    cut_assert_equal_memory (aids[0], sizeof (MifareDESFireAID), aid, sizeof (MifareDESFireAID), cut_message ("Wrong UID"));
+
+    mifare_desfire_free_application_ids (aids);
+
+    // Authenticate on the application
+    res = mifare_desfire_authenticate (tag, 0, default_key);
+    cut_assert_success (tag, "mifare_desfire_authenticate()");
+    
+    // Delete application
+    res = mifare_desfire_delete_application (tag, aid);
+    cut_assert_success (tag, "mifare_desfire_delete_application()");
+
+    free (root);
+    free (aid);
 }

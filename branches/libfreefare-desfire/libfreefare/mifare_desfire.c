@@ -37,7 +37,7 @@
 #include <libutil.h>
 
 // TODO Check this.
-#define MAX_RES_SIZE 58
+#define MAX_RES_SIZE 60
 
 #define NOAUTH 255
 
@@ -405,7 +405,7 @@ mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid)
 }
 
 int
-mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids, size_t *count)
+mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], size_t *count)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -416,33 +416,37 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids, size_
 
     DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
     *count = (n-1)/3;
-    aids = malloc ((*count) * sizeof (MifareDESFireAID));
+    *aids = malloc ((*count + 1) * sizeof (MifareDESFireAID));
     for (int i = 0; (3*i + 1) < n; i++) {
-	aids[i] = memdup (res + 3*i + 1, 3);
+	(*aids)[i] = memdup (res + 3*i + 1, 3);
     }
 
-    if (n == 1+19*3) {
+    if (res[0] == 0xAF) {
 	cmd[1] = 0xAF;
 	DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
 	*count += (n-1) / 3;
 
 	MifareDESFireAID *p;
-	if ((p = realloc (aids, (*count) * sizeof (MifareDESFireAID)))) {
-	    aids = p;
+	if ((p = realloc (*aids, (*count + 1) * sizeof (MifareDESFireAID)))) {
+	    *aids = p;
 
 	    for (int i = 0; (3*i + 1) < n; i++) {
-		aids[19+i] = memdup (res + 3*i + 1, 3);
+		(*aids)[19+i] = memdup (res + 3*i + 1, 3);
 	    }
 	}
     }
+
+    (*aids)[*count] = NULL;
 
     return 0;
 }
 
 void
-mifare_desfire_free_application_ids (MifareDESFireAID *aids)
+mifare_desfire_free_application_ids (MifareDESFireAID aids[])
 {
-
+    for (int i = 0; aids[i]; i++)
+	free (aids[i]);
+    free (aids);
 }
 
 int
