@@ -175,6 +175,31 @@ MifareDESFireAID mifare_desfire_aid_new_with_mad_aid (MadAid mad_aid, uint8_t n)
 struct mifare_desfire_key;
 typedef struct mifare_desfire_key *MifareDESFireKey;
 
+struct mifare_desfire_version_info {
+    struct {
+	uint8_t vendor_id;
+	uint8_t type;
+	uint8_t subtype;
+	uint8_t version_major;
+	uint8_t version_minor;
+	uint8_t storage_size;
+	uint8_t protocol;
+    } hardware;
+    struct {
+	uint8_t vendor_id;
+	uint8_t type;
+	uint8_t subtype;
+	uint8_t version_major;
+	uint8_t version_minor;
+	uint8_t storage_size;
+	uint8_t protocol;
+    } software;
+    uint8_t uid[7];
+    uint8_t batch_number[5];
+    uint8_t production_week;
+    uint8_t production_year;
+};
+
 int		 mifare_desfire_connect (MifareTag tag);
 int		 mifare_desfire_disconnect (MifareTag tag);
 uint8_t	 	 mifare_desfire_get_last_error (MifareTag tag);
@@ -190,6 +215,7 @@ int		 mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[
 void		 mifare_desfire_free_application_ids (MifareDESFireAID aids[]);
 int		 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid);
 int		 mifare_desfire_format_picc (MifareTag tag);
+int		 mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *info);
 
 char		*mifare_desfire_get_uid(MifareTag tag);
 
