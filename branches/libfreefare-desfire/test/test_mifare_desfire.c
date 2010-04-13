@@ -28,8 +28,8 @@ uint8_t null_key_data[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 #define cut_assert_success(tag, last_command) \
     do { \
-	if (MIFARE_DESFIRE (tag)->last_picc_error != OPERATION_OK) { \
-	    cut_fail ("%s: %s\n", last_command, desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error)); \
+	if ((res < 0) || (MIFARE_DESFIRE (tag)->last_picc_error != OPERATION_OK)) { \
+	    cut_fail ("%s returned %d, error: %s\n", last_command, res, desfire_error_lookup (MIFARE_DESFIRE (tag)->last_picc_error)); \
 	} \
     } while (0);
 
