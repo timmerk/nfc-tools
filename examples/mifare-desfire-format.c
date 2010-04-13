@@ -35,6 +35,9 @@ main(int argc, char *argv[])
     nfc_device_t *device = NULL;
     MifareTag *tags = NULL;
 
+    if (argc > 1)
+	errx (EXIT_FAILURE, "usage: %s", argv[0]);
+
     device = nfc_connect (NULL);
     if (!device)
         errx (EXIT_FAILURE, "No NFC device found.");
