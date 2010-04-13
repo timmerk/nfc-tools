@@ -105,7 +105,6 @@ test_mifare_desfire_create_application (void)
     cut_assert_not_null (aid, cut_message ("mifare_desfire_aid_new() failed"));
     // Authenticate
     MifareDESFireKey default_key = mifare_desfire_des_key_new_with_version (null_key_data);
-#if 0
     res = mifare_desfire_authenticate (tag, 0, default_key);
     cut_assert_success (tag, "mifare_desfire_authenticate()");
     
@@ -121,7 +120,6 @@ test_mifare_desfire_create_application (void)
     res = mifare_desfire_authenticate (tag, 0, default_key);
     cut_assert_success (tag, "mifare_desfire_authenticate()");
 
-#endif
     // Select the master plop
     MifareDESFireAID root = mifare_desfire_card_level_aid_new ();
     res = mifare_desfire_select_application (tag, root);
