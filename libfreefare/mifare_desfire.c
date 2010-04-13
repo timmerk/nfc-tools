@@ -125,7 +125,7 @@ mifare_desfire_connect (MifareTag tag)
     ASSERT_MIFARE_DESFIRE (tag);
 
     nfc_target_info_t pnti;
-    if (nfc_initiator_select_tag (tag->device, NM_ISO14443A_106, tag->info.abtUid, 8, &pnti)) {
+    if (nfc_initiator_select_tag (tag->device, NM_ISO14443A_106, tag->info.abtUid, 7, &pnti)) {
 	tag->active = 1;
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = NULL;
