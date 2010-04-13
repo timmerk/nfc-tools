@@ -180,8 +180,6 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     MIFARE_DESFIRE (tag)->authenticated_key_no = NOAUTH;
     MIFARE_DESFIRE (tag)->session_key->type = T_NONE;
 
-    hexdump (key, 8, "key                   ", 0);
-
     uint8_t command[2];
     command[0] = 0x0A;
     command[1] = key_no;
@@ -193,16 +191,13 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t PICC_E_RndB[8];
     memcpy (PICC_E_RndB, status+1, 8);
-    hexdump (PICC_E_RndB, sizeof (PICC_E_RndB), "e(PICC_RndB)          ", 0);
 
     uint8_t PICC_RndB[8];
     memcpy (PICC_RndB, PICC_E_RndB, 8);
     mifare_cbc_des (key, PICC_RndB, 8, MD_RECEIVE);
-    hexdump (PICC_RndB, sizeof (PICC_RndB), "  PICC_RndB           ", 0);
 
     uint8_t PCD_RndA[8];
     DES_random_key ((DES_cblock*)&PCD_RndA);
-    hexdump (PCD_RndA, sizeof (PCD_RndA), "  PCD_RndA            ", 0);
 
     uint8_t PCD_r_RndB[8];
     memcpy (PCD_r_RndB, PICC_RndB, 8);
@@ -212,11 +207,8 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     memcpy (token, PCD_RndA, 8);
     memcpy (token+8, PCD_r_RndB, 8);
 
-    hexdump (token, sizeof (token), "  PCD_RndA+PCD_RndB'  ", 0);
-
     mifare_cbc_des (key, token, 16, MD_SEND);
 
-    hexdump (token, sizeof (token), "d(PCD_RndA+PCD_RndB') ", 0);
 
     uint8_t msg[17];
     msg[0] = 0xAF;
@@ -226,17 +218,14 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t PICC_E_RndA_s[8];
     memcpy (PICC_E_RndA_s, status+1, 8);
-    hexdump (PICC_E_RndA_s, sizeof (PICC_E_RndA_s), "e(PICC_RndA')         ", 0);
 
     uint8_t PICC_RndA_s[8];
     memcpy (PICC_RndA_s, PICC_E_RndA_s, 8);
     mifare_cbc_des (key, PICC_RndA_s, 8, MD_RECEIVE);
-    hexdump (PICC_RndA_s, sizeof (PICC_RndA_s), "  PICC_RndA'          ", 0);
 
     uint8_t PCD_RndA_s[8];
     memcpy (PCD_RndA_s, PCD_RndA, 8);
     rol8 (PCD_RndA_s);
-    hexdump (PCD_RndA_s, sizeof (PCD_RndA_s), "  PCD_RndA'           ", 0);
 
 
     if (0 != memcmp (PCD_RndA_s, PICC_RndA_s, 8)) {
@@ -339,11 +328,7 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
 	}
     }
 
-    hexdump (cmd, sizeof (cmd), "mifare_desfire_change_key (raw): ", 0);
-
     mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 24, MD_SEND);
-
-    hexdump (cmd, sizeof (cmd), "mifare_desfire_change_key (des): ", 0);
 
     DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
 
