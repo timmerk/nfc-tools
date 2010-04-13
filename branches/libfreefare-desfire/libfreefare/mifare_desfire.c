@@ -460,3 +460,14 @@ mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
 
     return 0;
 }
+
+/*
+ * UID accessor
+ */
+char*
+mifare_desfire_get_uid(MifareTag tag)
+{
+  char* uid = malloc((7 * 2) + 1);
+  snprintf(uid, 15, "%02x%02x%02x%02x%02x%02x%02x", tag->info.abtUid[0], tag->info.abtUid[1], tag->info.abtUid[2], tag->info.abtUid[3], tag->info.abtUid[4], tag->info.abtUid[5], tag->info.abtUid[6]);
+  return uid;
+}
