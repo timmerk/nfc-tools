@@ -215,7 +215,7 @@ int		 mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[
 void		 mifare_desfire_free_application_ids (MifareDESFireAID aids[]);
 int		 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid);
 int		 mifare_desfire_format_picc (MifareTag tag);
-int		 mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *info);
+int		 mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *version_info);
 
 char		*mifare_desfire_get_uid(MifareTag tag);
 
