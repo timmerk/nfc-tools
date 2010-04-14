@@ -433,11 +433,21 @@ mifare_desfire_free_application_ids (MifareDESFireAID aids[])
     free (aids);
 }
 
+/*
+ * Select the application specified by aid for further operation.  If aid is
+ * NULL, the master application is selected (equivalent to aid = 0x00000).
+ */
 int
 mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
+
+    struct mifare_desfire_aid null_aid = { 0x00, 0x00, 0x00 };
+
+    if (!aid) {
+	aid = &null_aid;
+    }
 
     unsigned char cmd[4] = { 0x5A };
     memcpy (cmd+1, aid->data, sizeof (aid->data));
