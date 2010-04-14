@@ -47,6 +47,12 @@
 	    return errno = EINVAL, -1;\
     } while (0);
 
+#define ASSERT_NOT_NULL(argument) \
+    do { \
+	if (!argument) \
+	    return errno = EINVAL, -1; \
+    } while (0);
+
 #define DESFIRE_TRANSCEIVE(tag, msg, msg_len, res, res_len) \
     do { \
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK; \
@@ -335,11 +341,16 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
     return 0;
 }
 
+/*
+ * Retrieve version information for a given key.
+ */
 int
 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
+
+    ASSERT_NOT_NULL (version);
 
     unsigned char cmd[2] = { 0x64, key_no };
     unsigned char res[2];
