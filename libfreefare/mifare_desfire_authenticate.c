@@ -52,7 +52,6 @@ mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection
 {
     /*
      * FIXME Should we change the way errors traverse this function?
-     * TODO Also handle 3DES keys!
      */
     uint8_t ovect[8];
 
@@ -66,10 +65,10 @@ mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection
 
     switch (key->type) {
 	case T_DES:
-    DES_set_key ((DES_cblock *)(key->data), &ks);
+	    DES_set_key ((DES_cblock *)(key->data), &ks);
 
-    DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &ks, DES_DECRYPT);
-    memcpy (data, edata, 8);
+	    DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &ks, DES_DECRYPT);
+	    memcpy (data, edata, 8);
 
 	    break;
 	case T_3DES:
