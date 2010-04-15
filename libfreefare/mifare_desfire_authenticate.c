@@ -61,13 +61,28 @@ mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection
     } else {
 	memcpy (ovect, data, 8);
     }
+    DES_key_schedule ks, ks2;
+    uint8_t edata[8];
 
-    DES_key_schedule ks;
+    switch (key->type) {
+	case T_DES:
     DES_set_key ((DES_cblock *)(key->data), &ks);
 
-    uint8_t edata[8];
     DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &ks, DES_DECRYPT);
     memcpy (data, edata, 8);
+
+	    break;
+	case T_3DES:
+	    DES_set_key ((DES_cblock *)(key->data), &ks);
+	    DES_set_key ((DES_cblock *)(key->data + 8), &ks2);
+
+	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &ks,  DES_DECRYPT);
+	    DES_ecb_encrypt ((DES_cblock *) edata, (DES_cblock *) data,  &ks2, DES_ENCRYPT);
+	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &ks,  DES_DECRYPT);
+	    memcpy (data, edata, 8);
+
+	    break;
+    }
 
     if (direction == MD_SEND) {
 	memcpy (ivect, data, 8);
