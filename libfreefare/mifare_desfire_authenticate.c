@@ -51,7 +51,7 @@ void
 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction)
 {
     /*
-     * FIXME Should we change the way errors traverse this function?
+     * TODO Generate and save key schedules at key allocation.
      */
     uint8_t ovect[8];
 
