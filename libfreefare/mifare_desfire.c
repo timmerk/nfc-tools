@@ -295,7 +295,7 @@ mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_
 }
 
 int
-mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
+mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_key, MifareDESFireKey old_key)
 {
     uint8_t cmd[1+1+24];
 
@@ -311,20 +311,24 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key)
     size_t n;
 
     if ((MIFARE_DESFIRE (tag)->authenticated_key_no != key_no) /* FIXME && (ChangeKey key != 0x0E)*/) {
-	memcpy (data, MIFARE_DESFIRE (tag)->session_key->data, 16);
+	if (old_key) {
+	    memcpy (data, old_key->data, 16);
+	} else {
+	    memset (data, '\0', 16);
+	}
 	for (int n=0; n<16; n++) {
-	    data[n] ^= key->data[n];
+	    data[n] ^= new_key->data[n];
 	}
 	// Append XORed data CRC
 	iso14443a_crc (data, 16, data+16);
 	// Append new key CRC
-	iso14443a_crc (key->data, 16, data+18);
+	iso14443a_crc (new_key->data, 16, data+18);
 	// Padding
 	for (int n=20; n<24; n++) {
 	    data[n] = 0x00;
 	}
     } else {
-	memcpy (data, key->data, 16);
+	memcpy (data, new_key->data, 16);
 	// Append new key CRC
 	iso14443a_crc (data, 16, data+16);
 
