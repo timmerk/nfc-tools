@@ -207,7 +207,7 @@ uint8_t	 	 mifare_desfire_get_last_error (MifareTag tag);
 int		 mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
 int		 mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings);
 int		 mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_keys);
-int		 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey key);
+int		 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_key, MifareDESFireKey old_key);
 int		 mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version);
 int		 mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t settings, uint8_t key_no);
 int		 mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid);
