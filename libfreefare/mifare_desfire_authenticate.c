@@ -50,9 +50,6 @@ rol8(uint8_t *data)
 void
 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction)
 {
-    /*
-     * TODO Generate and save key schedules at key allocation.
-     */
     uint8_t ovect[8];
 
     if (direction == MD_SEND) {
@@ -60,26 +57,18 @@ mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection
     } else {
 	memcpy (ovect, data, 8);
     }
-    DES_key_schedule ks, ks2;
     uint8_t edata[8];
 
     switch (key->type) {
 	case T_DES:
-	    DES_set_key ((DES_cblock *)(key->data), &ks);
-
-	    DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &ks, DES_DECRYPT);
+	    DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &(key->ks1), DES_DECRYPT);
 	    memcpy (data, edata, 8);
-
 	    break;
 	case T_3DES:
-	    DES_set_key ((DES_cblock *)(key->data), &ks);
-	    DES_set_key ((DES_cblock *)(key->data + 8), &ks2);
-
-	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &ks,  DES_DECRYPT);
-	    DES_ecb_encrypt ((DES_cblock *) edata, (DES_cblock *) data,  &ks2, DES_ENCRYPT);
-	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &ks,  DES_DECRYPT);
+	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &(key->ks1), DES_DECRYPT);
+	    DES_ecb_encrypt ((DES_cblock *) edata, (DES_cblock *) data,  &(key->ks2), DES_ENCRYPT);
+	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &(key->ks1), DES_DECRYPT);
 	    memcpy (data, edata, 8);
-
 	    break;
     }
 

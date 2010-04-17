@@ -35,6 +35,7 @@
 #endif
 #endif
 
+#include <openssl/des.h>
 
 struct mad_sector_0x00;
 struct mad_sector_0x10;
@@ -109,6 +110,8 @@ struct mifare_desfire_key {
 	T_DES,
 	T_3DES
     } type;
+    DES_key_schedule ks1;
+    DES_key_schedule ks2;
 };
 
 struct mifare_desfire_tag {
