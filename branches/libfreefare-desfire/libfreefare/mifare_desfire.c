@@ -96,13 +96,9 @@ mifare_desfire_tag_new (void)
 {
     MifareTag tag;
     if ((tag= malloc (sizeof (struct mifare_desfire_tag)))) {
-	if (!(MIFARE_DESFIRE (tag)->session_key = malloc (sizeof (struct mifare_desfire_key)))) {
-	    free (tag);
-	    errno = ENOMEM;
-	    return NULL;
-	}
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = NULL;
+	MIFARE_DESFIRE (tag)->session_key = NULL;
     }
     return tag;
 }
@@ -139,7 +135,8 @@ mifare_desfire_connect (MifareTag tag)
     nfc_target_info_t pnti;
     if (nfc_initiator_select_tag (tag->device, NM_ISO14443A_106, tag->info.abtUid, 7, &pnti)) {
 	tag->active = 1;
-	MIFARE_DESFIRE (tag)->session_key->type = T_NONE;
+	free (MIFARE_DESFIRE (tag)->session_key);
+	MIFARE_DESFIRE (tag)->session_key = NULL;
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = NULL;
 	MIFARE_DESFIRE (tag)->authenticated_key_no = NOAUTH;
@@ -158,6 +155,9 @@ mifare_desfire_disconnect (MifareTag tag)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
+
+    free (MIFARE_DESFIRE (tag)->session_key);
+    MIFARE_DESFIRE(tag)->session_key = NULL;
 
     if (nfc_initiator_deselect_tag (tag->device)) {
 	tag->active = 0;
@@ -184,7 +184,8 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 
     MIFARE_DESFIRE (tag)->authenticated_key_no = NOAUTH;
-    MIFARE_DESFIRE (tag)->session_key->type = T_NONE;
+    free (MIFARE_DESFIRE (tag)->session_key);
+    MIFARE_DESFIRE (tag)->session_key = NULL;
 
     uint8_t command[2];
     command[0] = 0x0A;
@@ -239,13 +240,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     }
 
     MIFARE_DESFIRE (tag)->authenticated_key_no = key_no;
-    MIFARE_DESFIRE (tag)->session_key->type = key->type;
-
-    /* Generate the session-key */
-    memcpy (MIFARE_DESFIRE (tag)->session_key->data,     PCD_RndA,      4);
-    memcpy (MIFARE_DESFIRE (tag)->session_key->data + 4, PICC_RndB,     4);
-    memcpy (MIFARE_DESFIRE (tag)->session_key->data + 8, PCD_RndA  + 4, 4);
-    memcpy (MIFARE_DESFIRE (tag)->session_key->data + 12, PICC_RndB + 4, 4);
+    MIFARE_DESFIRE (tag)->session_key = mifare_desfire_session_key_new (PCD_RndA, PICC_RndB, key);
 
     return 0;
 }
