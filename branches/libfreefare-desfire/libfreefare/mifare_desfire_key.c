@@ -20,8 +20,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <openssl/des.h>
+
 #include <freefare.h>
 #include "freefare_internal.h"
+
+inline void	 update_key_schedules (MifareDESFireKey key);
+
+inline void
+update_key_schedules (MifareDESFireKey key)
+{
+    DES_set_key ((DES_cblock *)key->data, &(key->ks1));
+    DES_set_key ((DES_cblock *)(key->data + 8), &(key->ks2));
+}
 
 MifareDESFireKey
 mifare_desfire_des_key_new (uint8_t value[8])
@@ -41,6 +52,7 @@ mifare_desfire_des_key_new_with_version (uint8_t value[8])
     if ((key = malloc (sizeof (struct mifare_desfire_key)))) {
 	memcpy (key->data, value, 8);
 	memcpy (key->data+8, value, 8);
+	update_key_schedules (key);
 	key->type = T_DES;
     }
     return key;
@@ -65,6 +77,7 @@ mifare_desfire_3des_key_new_with_version (uint8_t value[16])
 
     if ((key = malloc (sizeof (struct mifare_desfire_key)))) {
 	memcpy (key->data, value, 16);
+	update_key_schedules (key);
 	key->type = T_3DES;
     }
     return key;
