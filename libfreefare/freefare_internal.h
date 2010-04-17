@@ -106,7 +106,6 @@ struct mifare_desfire_aid {
 struct mifare_desfire_key {
     uint8_t data[16];
     enum {
-	T_NONE,
 	T_DES,
 	T_3DES
     } type;
@@ -120,6 +119,8 @@ struct mifare_desfire_tag {
     MifareDESFireKey session_key;
     uint8_t authenticated_key_no;
 };
+
+MifareDESFireKey mifare_desfire_session_key_new (uint8_t rnda[8], uint8_t rndb[8], MifareDESFireKey authentication_key);
 
 struct mifare_ultralight_tag {
     struct mifare_tag __tag;
