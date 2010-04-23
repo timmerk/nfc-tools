@@ -16,6 +16,7 @@ Then, you can compile and use desknfc.
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/desknfc desknfc
 cd deskfnc
 cmake .
+make
 su -c 'make install clean'
 -> type your root password <-
 }}}
