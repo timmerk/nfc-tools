@@ -15,7 +15,9 @@ Then, you can compile and use desknfc.
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/desknfc desknfc
 cd deskfnc
-cmake .
+mkdir build
+cd build
+cmake ..
 make
 su -c 'make install clean'
 -> type your root password <-
@@ -26,6 +28,6 @@ Once these commands succeed, just launch nfcd, and type:
 desknfc
 }}}
 
-You can also choose not to install desknfc, so just type "make" instead of "su -c 'make install'", and launch the desknfc binary which is in the current directory.
+You can also choose not to install desknfc, so just type "make" instead of "su -c 'make install'", and launch the desknfc binary which is in the build directory.
 
 Nfcd is needed all along the execution of desknfc.
