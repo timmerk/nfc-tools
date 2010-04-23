@@ -28,7 +28,7 @@ nfcd
 }}}
 No need to be root, you can do that as a basic user.
 
-You can also choose not to install nfcd, so just type "make" instead of "su -c 'make install'", and launch the nfcd binary in the build directory.
+You can also choose not to install nfcd, so just type "make" instead of "su -c 'make install'", and launch the nfcd binary which is in the build directory.
 
 To stop it, ctrl + C.
 Nfcd is needed all along the execution of desknfc.
