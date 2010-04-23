@@ -18,6 +18,7 @@ cd nfcd
 mkdir build
 cd build
 cmake ..
+make
 su -c 'make install clean'
 -> type your root password <-
 }}}
