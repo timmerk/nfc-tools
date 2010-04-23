@@ -1,0 +1,34 @@
+#summary nfcd - Downloading, Installation and use
+
+= Introduction =
+
+Nfcd is a daemon which access NFC Devices and Targets. It publish it on DBUS and offer DBUS services to get devices list, targets list, target content...
+It is necessary to use desknfc.
+Nfcd is written in C++, it use Qt, libfreefare, libndef, libnfc. 
+
+= Installation =
+
+You need to have cmake, qt4, libfreefare, libndef and libnfc installed on your system.
+
+Then, you can compile and use nfcd.
+
+{{{
+svn checkout http://nfc-tools.googlecode.com/svn/trunk/nfcd nfcd
+cd nfcd
+mkdir build
+cd build
+cmake ..
+su -c 'make install clean'
+-> type your root password <-
+}}}
+
+Once these commands succeed, just type:
+{{{
+nfcd
+}}}
+No need to be root, you can do that as a basic user.
+
+You can also choose not to install nfcd, so just type "make" instead of "su -c 'make install'", and launch the nfcd binary in the build directory.
+
+To stop it, ctrl + C.
+Nfcd is needed all along the execution of desknfc.
