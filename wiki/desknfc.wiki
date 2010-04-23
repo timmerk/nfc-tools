@@ -14,7 +14,7 @@ Then, you can compile and use desknfc.
 
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/desknfc desknfc
-cd deskfnc
+cd desknfc
 mkdir build
 cd build
 cmake .
