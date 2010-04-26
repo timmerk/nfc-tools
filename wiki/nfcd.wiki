@@ -3,7 +3,7 @@
 = Introduction =
 
 Nfcd is a daemon which access NFC Devices and Targets. It offer DBUS services to get devices list, targets list, target content...
-It is necessary to use desknfc.
+It is necessary for desknfc.
 Nfcd is written in C++, it use Qt, libfreefare, libndef, libnfc. 
 
 = Installation =
