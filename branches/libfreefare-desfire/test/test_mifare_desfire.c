@@ -186,20 +186,20 @@ test_mifare_desfire (void)
     cut_assert_success ("mifare_desfire_select_application()");
 
     uint8_t std_data_file_id = 15;
-#if 0
 
-    res = mifare_desfire_create_std_data_file (tag, std_data_file_id, 0, 0xEEEE, 100);
+    res = mifare_desfire_create_std_data_file (tag, std_data_file_id, MDCM_PLAIN, 0xEEEE, 100);
     cut_assert_success ("mifare_desfire_create_std_data_file()");
 
-    res = mifare_desfire_create_backup_data_file (tag, 5, 0, 0xEEEE, 64);
+    res = mifare_desfire_create_backup_data_file (tag, 5, MDCM_PLAIN, 0xEEEE, 64);
     cut_assert_success ("mifare_desfire_create_backup_data_file()");
 
-    res = mifare_desfire_create_value_file (tag, 0, 0xEEEE, 0, 1000, 0, 0);
+    res = mifare_desfire_create_value_file (tag, 4, MDCM_PLAIN, 0xEEEE, 0, 1000, 0, 0);
     cut_assert_success ("mifare_desfire_create_value_file()");
 
-    res = mifare_desfire_create_cyclic_record_file (0, 0, 0xEEEE, 4, 10);
+    res = mifare_desfire_create_cyclic_record_file (tag, 0, MDCM_PLAIN, 0xEEEE, 4, 10);
     cut_assert_success ("mifare_desfire_create_cyclic_record_file()");
 
+#if 0
     res = mifare_desfire_write_data (tag, std_data_file_id, PLAIN, 0, 30, (uint8_t *)"Some data to write to the card");
     cut_assert_success ("mifare_desfire_write_data()");
 

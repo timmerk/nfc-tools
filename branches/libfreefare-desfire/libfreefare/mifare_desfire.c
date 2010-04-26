@@ -36,6 +36,9 @@
 // TODO Remove this
 #include <libutil.h>
 
+static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
+static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
+
 // TODO Check this.
 #define MAX_RES_SIZE 60
 
@@ -165,14 +168,6 @@ memdup(void *p, size_t n)
     }
     return res;
 }
-
-enum mifare_desfire_application_type {
-    standard_data_file,
-    backup_data_file,
-    value_file_with_backup,
-    linear_record_file_with_backup,
-    cyclic_record_file_with_backup
-};
 
 
 /*
@@ -613,6 +608,176 @@ mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *v
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
     memcpy (&(version_info->uid), res+1, 14);
+
+    return 0;
+}
+
+
+
+/* Application level commands */
+
+int
+mifare_desfire_get_file_ids (MifareTag tag, uint8_t *files[], size_t *count)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, 16);
+
+    BUFFER_APPEND (cmd, 0x6F);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    *count = BUFFER_SIZE (res) - 1;
+
+    if (!(*files = malloc (*count))) {
+	errno = ENOMEM;
+	return -1;
+    }
+    memcpy (*files, res+1, *count);
+
+    return 0;
+}
+
+int
+mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_desfire_file_settings *settings)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 2);
+    BUFFER_INIT (res, 18);
+
+    BUFFER_APPEND (cmd, 0xF5);
+    BUFFER_APPEND (cmd, file_no);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    memcpy (settings, cmd+1, BUFFER_SIZE (res)-1);  // FIXME endianness (loads!)
+    return 0;
+}
+
+int
+mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 5);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0x5F);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND (cmd, communication_settings);
+    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+static int
+create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 8);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, command);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND (cmd, communication_settings);
+    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
+    BUFFER_APPEND_LE (cmd, file_size, 3, 4);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+int
+mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size)
+{
+    return create_file1 (tag, 0xCD, file_no, communication_settings, access_right, file_size);
+}
+
+int
+mifare_desfire_create_backup_data_file  (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size)
+{
+    return create_file1 (tag, 0xCB, file_no, communication_settings, access_right, file_size);
+}
+
+int
+mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 18);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0xCC);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND (cmd, communication_settings);
+    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
+    BUFFER_APPEND_LE (cmd, lower_limit, 4, 4);
+    BUFFER_APPEND_LE (cmd, upper_limit, 4, 4);
+    BUFFER_APPEND_LE (cmd, value, 4, 4);
+    BUFFER_APPEND (cmd, limited_credit_enable);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+static int
+create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 11);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, command);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND (cmd, communication_settings);
+    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
+    BUFFER_APPEND_LE (cmd, record_size, 3, 4);
+    BUFFER_APPEND_LE (cmd, max_number_of_records, 3, 4);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+int
+mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records)
+{
+    return create_file2 (tag, 0xC1, file_no, communication_settings, access_right, record_size, max_number_of_records);
+}
+
+int
+mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records)
+{
+    return create_file2 (tag, 0xC0, file_no, communication_settings, access_right, record_size, max_number_of_records);
+}
+
+int
+mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 2);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0xDF);
+    BUFFER_APPEND (cmd, file_no);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
