@@ -53,19 +53,110 @@
 	    return errno = EINVAL, -1; \
     } while (0);
 
-#define DESFIRE_TRANSCEIVE(tag, msg, msg_len, res, res_len) \
+
+/*
+ * Buffer management macros.
+ * 
+ * The following macros ease setting-up and using buffers:
+ * BUFFER_INIT (data, 5);      // data -> [ xx, xx, xx, xx, xx ]
+ * BUFFER_SIZE (data);         // size -> 0
+ * BUFFER_APPEND (data, 0x12); // data -> [ 12, xx, xx, xx, xx ]
+ * BUFFER_SIZE (data);         // size -> 1
+ * uint16_t x = 0x3456;        // We suppose we are little endian
+ * BUFFER_APPEND_BYTES (data, x, 2);
+ *                             // data -> [ 12, 56, 34, xx, xx ]
+ * BUFFER_SIZE (data);         // size -> 3
+ * BUFFER_APPEND_LE (data, x, 2, 2);
+ *                             // data -> [ 12, 56, 34, 34, 56 ]
+ * BUFFER_SIZE (data);         // size -> 5
+ */
+
+/*
+ * Initialise a buffer named buffer_name of size bytes.
+ */
+#define BUFFER_INIT(buffer_name, size) \
+    uint8_t buffer_name[size]; \
+    size_t __##buffer_name##_n = 0
+
+#define BUFFER_SIZE(buffer_name) (__##buffer_name##_n)
+
+/*
+ * Append one byte of data to the buffer buffer_name.
+ */
+#define BUFFER_APPEND(buffer_name, data) \
+    do { \
+	buffer_name[__##buffer_name##_n++] = data; \
+    } while (0)
+
+/*
+ * Append size bytes of data to the buffer buffer_name.
+ */
+#define BUFFER_APPEND_BYTES(buffer_name, data, size) \
+    do { \
+	size_t __n = 0; \
+	while (__n < size) { \
+	    buffer_name[__##buffer_name##_n++] = data[__n++]; \
+	} \
+    } while (0)
+
+/*
+ * Append data_size bytes of data at the end of the buffer.  Since data is
+ * copied as a little endian value, the storage size of the value has to be
+ * passed as the field_size parameter.
+ *
+ * Example: to copy 24 bits of data from a 32 bits value:
+ * BUFFER_APPEND_LE (buffer, data, 3, 4);
+ */
+
+// FIXME: remove debugging stuff
+#if _BYTE_ORDER != _LITTLE_ENDIAN
+#define BUFFER_APPEND_LE(buffer, data, data_size, field_size) \
+    do { \
+	printf ("append (%p, %lu, %p, %d (%d))\n", buffer, __##buffer##_n, data, (int) data_size, (int) field_size); \
+	size_t __data_size = data_size; \
+	size_t __field_size = field_size; \
+	while (__field_size--, __data_size--) { \
+	    printf ("  buffer[%lu] <- %02x\n", __##buffer##_n, ((uint8_t *)&data)[__field_size]); \
+	    buffer[__##buffer##_n++] = ((uint8_t *)&data)[__field_size]; \
+	} \
+    } while (0)
+#else
+#define BUFFER_APPEND_LE(buffer, data, data_size, field_size) \
+    do { \
+	memcpy (buffer + __##buffer##_n, &data, data_size); \
+	__##buffer##_n += data_size; \
+    } while (0)
+#endif
+
+
+/*
+ * Convenience macros.
+ */
+
+/*
+ * Transmit the message msg to the NFC tag and receive the response res.  The
+ * response buffer's size is set according to the quantity od data received.
+ */
+// FIXME: remove debugging stuff
+#define DESFIRE_TRANSCEIVE(tag, msg, res) \
     do { \
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK; \
-        hexdump (msg, msg_len, "---> ", 0); \
-	if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, msg_len, res, &res_len))) \
+        hexdump (msg, __##msg##_n, "---> ", 0); \
+	if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, __##msg##_n, res, &__##res##_n))) \
 	    return errno = EIO, -1; \
-        hexdump (res, res_len, "<--- ", 0); \
-	if ((1 == res_len) && (OPERATION_OK != res[0])) \
+        hexdump (res, __##res##_n, "<--- ", 0); \
+	if ((1 == __##res##_n) && (OPERATION_OK != res[0])) \
 	    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
     } while (0)
 
-void		*memdup(void *p, size_t n);
-void *
+
+/*
+ * Miscellaneous low-level memory manipulation functions.
+ */
+
+static void	*memdup(void *p, size_t n);
+
+static void *
 memdup(void *p, size_t n)
 {
     void *res;
@@ -187,17 +278,17 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE (tag)->session_key = NULL;
 
-    uint8_t command[2];
-    command[0] = 0x0A;
-    command[1] = key_no;
+    BUFFER_INIT (cmd1, 2);
+    BUFFER_INIT (res, 9);
 
-    uint8_t status[9];
-    size_t n;
-    DESFIRE_TRANSCEIVE (tag, command, sizeof (command), status, n);
+    BUFFER_APPEND (cmd1, 0x0A);
+    BUFFER_APPEND (cmd1, key_no);
+
+    DESFIRE_TRANSCEIVE (tag, cmd1, res);
 
 
     uint8_t PICC_E_RndB[8];
-    memcpy (PICC_E_RndB, status+1, 8);
+    memcpy (PICC_E_RndB, res+1, 8);
 
     uint8_t PICC_RndB[8];
     memcpy (PICC_RndB, PICC_E_RndB, 8);
@@ -216,15 +307,15 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     mifare_cbc_des (key, token, 16, MD_SEND);
 
+    BUFFER_INIT (cmd2, 17);
 
-    uint8_t msg[17];
-    msg[0] = 0xAF;
-    memcpy (msg + 1, token, 16);
+    BUFFER_APPEND (cmd2, 0xAF);
+    BUFFER_APPEND_BYTES (cmd2, token, 16);
 
-    DESFIRE_TRANSCEIVE (tag, msg, sizeof (msg), status, n);
+    DESFIRE_TRANSCEIVE (tag, cmd2, res);
 
     uint8_t PICC_E_RndA_s[8];
-    memcpy (PICC_E_RndA_s, status+1, 8);
+    memcpy (PICC_E_RndA_s, res+1, 8);
 
     uint8_t PICC_RndA_s[8];
     memcpy (PICC_RndA_s, PICC_E_RndA_s, 8);
@@ -252,11 +343,12 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
     ASSERT_MIFARE_DESFIRE (tag);
     ASSERT_AUTHENTICATED (tag);
 
-    uint8_t cmd[9] = { 0x54 };
-    uint8_t res[1];
-    size_t n;
+    BUFFER_INIT (cmd, 9);
+    BUFFER_INIT (res, 1);
 
-    uint8_t *data = cmd + 1;
+    BUFFER_APPEND (cmd, 0x54);
+
+    uint8_t data[8];
 
     data[0] = settings;
     iso14443a_crc (data, 1, data + 1);
@@ -264,7 +356,9 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
 
     mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND);
 
-    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND_BYTES (cmd, data, 8);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
@@ -275,11 +369,12 @@ mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-    uint8_t cmd[1] = { 0x45 };
-    uint8_t res[3];
-    size_t n;
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, 3);
 
-    DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND (cmd, 0x45);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     if (settings)
 	*settings = res[1];
@@ -292,18 +387,17 @@ mifare_desfire_get_key_settings (MifareTag tag, uint8_t *settings, uint8_t *max_
 int
 mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_key, MifareDESFireKey old_key)
 {
-    uint8_t cmd[1+1+24];
-
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
     ASSERT_AUTHENTICATED (tag);
 
-    cmd[0] = 0xC4;
-    cmd[1] = key_no;
+    BUFFER_INIT (cmd, 1+1+24);
+    BUFFER_INIT (res, 1);
 
-    uint8_t *data = cmd + 2;
-    uint8_t res[1];
-    size_t n;
+    BUFFER_APPEND (cmd, 0xC4);
+    BUFFER_APPEND (cmd, key_no);
+
+    uint8_t data[24];
 
     if ((MIFARE_DESFIRE (tag)->authenticated_key_no != key_no) /* FIXME && (ChangeKey key != 0x0E)*/) {
 	if (old_key) {
@@ -335,7 +429,9 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_k
 
     mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 24, MD_SEND);
 
-    DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND_BYTES (cmd, data, 24);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
@@ -351,11 +447,13 @@ mifare_desfire_get_key_version (MifareTag tag, uint8_t key_no, uint8_t *version)
 
     ASSERT_NOT_NULL (version);
 
-    unsigned char cmd[2] = { 0x64, key_no };
-    unsigned char res[2];
-    size_t n;
+    BUFFER_INIT (cmd, 2);
+    BUFFER_APPEND (cmd, 0x64);
+    BUFFER_APPEND (cmd, key_no);
 
-    DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
+    BUFFER_INIT (res, 2);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     *version = res[1];
 
@@ -370,14 +468,15 @@ mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-    unsigned char cmd[6] = { 0xCA };
-    memcpy (cmd + 1, aid->data, 3);
-    cmd[4] = settings;
-    cmd[5] = key_no;
-    unsigned char res[1];
-    size_t n;
+    BUFFER_INIT (cmd, 6);
+    BUFFER_INIT (res, 1);
 
-    DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND (cmd, 0xCA);
+    BUFFER_APPEND_LE (cmd, aid->data, 3, 3);
+    BUFFER_APPEND (cmd, settings);
+    BUFFER_APPEND (cmd, key_no);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
@@ -388,12 +487,13 @@ mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-    unsigned char cmd[4] = { 0xDA };
-    memcpy (cmd + 1, aid, 3);
-    unsigned char res[1];
-    size_t n;
+    BUFFER_INIT (cmd, 4);
+    BUFFER_INIT (res, 1);
 
-    DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND (cmd, 0xDA);
+    BUFFER_APPEND_LE (cmd, aid->data, 3, 3);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
@@ -404,27 +504,28 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], siz
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-    unsigned char cmd[1] = { 0x6A };
-    unsigned char res[MAX_RES_SIZE];
-    size_t n;
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, MAX_RES_SIZE);
 
-    DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
-    *count = (n-1)/3;
+    BUFFER_APPEND (cmd, 0x6A);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+    *count = (BUFFER_SIZE (res)-1)/3;
     *aids = malloc ((*count + 1) * sizeof (MifareDESFireAID));
-    for (size_t i = 0; (3*i + 1) < n; i++) {
+    for (size_t i = 0; (3*i + 1) < BUFFER_SIZE (res); i++) {
 	(*aids)[i] = memdup (res + 3*i + 1, 3);
     }
 
     if (res[0] == 0xAF) {
-	cmd[1] = 0xAF;
-	DESFIRE_TRANSCEIVE(tag, cmd, sizeof (cmd), res, n);
-	*count += (n-1) / 3;
+	cmd[0] = 0xAF;
+	DESFIRE_TRANSCEIVE (tag, cmd, res);
+	*count += (BUFFER_SIZE (res)-1) / 3;
 
 	MifareDESFireAID *p;
 	if ((p = realloc (*aids, (*count + 1) * sizeof (MifareDESFireAID)))) {
 	    *aids = p;
 
-	    for (size_t i = 0; (3*i + 1) < n; i++) {
+	    for (size_t i = 0; (3*i + 1) < BUFFER_SIZE (res); i++) {
 		(*aids)[19+i] = memdup (res + 3*i + 1, 3);
 	    }
 	}
@@ -453,18 +554,19 @@ mifare_desfire_select_application (MifareTag tag, MifareDESFireAID aid)
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-    struct mifare_desfire_aid null_aid = { 0x00, 0x00, 0x00 };
+    struct mifare_desfire_aid null_aid = { .data = { 0x00, 0x00, 0x00 } };
 
     if (!aid) {
 	aid = &null_aid;
     }
 
-    unsigned char cmd[4] = { 0x5A };
-    memcpy (cmd+1, aid->data, sizeof (aid->data));
-    unsigned char res[1];
-    size_t n;
+    BUFFER_INIT (cmd, 4);
+    BUFFER_INIT (res, 1);
 
-    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND (cmd, 0x5A);
+    BUFFER_APPEND_LE (cmd, aid->data, sizeof (aid->data), sizeof (aid->data));
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
@@ -476,11 +578,12 @@ mifare_desfire_format_picc (MifareTag tag)
     ASSERT_MIFARE_DESFIRE (tag);
     ASSERT_AUTHENTICATED (tag);
 
-    uint8_t cmd[1] = { 0xFC };
-    uint8_t res[1];
-    size_t n;
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, 1);
 
-    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND (cmd, 0xFC);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
 }
@@ -496,18 +599,19 @@ mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *v
 
     ASSERT_NOT_NULL (version_info);
 
-    uint8_t cmd[1] = { 0x60 };
-    uint8_t res[8+8+15];
-    size_t n;
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, 15); /* 8, 8, then 15 byte results */
 
-    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    BUFFER_APPEND (cmd, 0x60);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
     memcpy (&(version_info->hardware), res+1, 7);
 
     cmd[0] = 0xAF;
-    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
     memcpy (&(version_info->software), res+1, 7);
 
-    DESFIRE_TRANSCEIVE (tag, cmd, sizeof (cmd), res, n);
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
     memcpy (&(version_info->uid), res+1, 14);
 
     return 0;
