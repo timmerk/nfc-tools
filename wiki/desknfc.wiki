@@ -2,28 +2,28 @@
 
 = Introduction =
 
-Desknfc is a GUI which offer nfcd access through DBUS.
+Desknfc is a graphical user interface which offer NFC content access.
+
 You can see Devices list, tag list, content list and open content.
-Desknfc is written in C++, it use Qt. 
+Desknfc is written in C++, depends on Qt4 and KDE4 libs and use [nfcd] D-Bus bindings.
 
 = Installation =
 
-You need to have cmake and qt4 installed on your system.
+You need to have CMake, Qt4 and KDE4 libs installed on your system.
 
-Then, you can compile and use desknfc.
-
+Then, you can fetch, compile and install desknfc.
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/desknfc desknfc
 cd desknfc
 mkdir build
 cd build
-cmake ..
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 make
 su -c 'make install clean'
 -> type your root password <-
 }}}
 
-Once these commands succeed, just launch nfcd, and type:
+Once these commands succeed, be sure that nfcd is launched and type:
 {{{
 desknfc
 }}}
