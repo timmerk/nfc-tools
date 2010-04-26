@@ -654,7 +654,7 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
-    memcpy (settings, cmd+1, BUFFER_SIZE (res)-1);  // FIXME endianness (loads!)
+    memcpy (settings, res+1, BUFFER_SIZE (res)-1);  // FIXME endianness (loads!)
     return 0;
 }
 
