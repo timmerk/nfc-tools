@@ -25,9 +25,9 @@
 #include <freefare.h>
 #include "freefare_internal.h"
 
-inline void	 update_key_schedules (MifareDESFireKey key);
+static inline void update_key_schedules (MifareDESFireKey key);
 
-inline void
+static inline void
 update_key_schedules (MifareDESFireKey key)
 {
     DES_set_key ((DES_cblock *)key->data, &(key->ks1));
