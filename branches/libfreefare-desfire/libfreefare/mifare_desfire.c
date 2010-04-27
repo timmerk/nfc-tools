@@ -75,14 +75,13 @@ static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8
 static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data);
 static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf);
 
-// TODO Check this.
 #define MAX_FRAME_SIZE 60
 
-#define NOAUTH 255
+#define NOT_YET_AUTHENTICATED 255
 
 #define ASSERT_AUTHENTICATED(tag) \
     do { \
-	if (MIFARE_DESFIRE (tag)->authenticated_key_no == NOAUTH) \
+	if (MIFARE_DESFIRE (tag)->authenticated_key_no == NOT_YET_AUTHENTICATED) \
 	    return errno = EINVAL, -1;\
     } while (0);
 
@@ -269,7 +268,7 @@ mifare_desfire_connect (MifareTag tag)
 	MIFARE_DESFIRE (tag)->session_key = NULL;
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = NULL;
-	MIFARE_DESFIRE (tag)->authenticated_key_no = NOAUTH;
+	MIFARE_DESFIRE (tag)->authenticated_key_no = NOT_YET_AUTHENTICATED;
     } else {
 	errno = EIO;
 	return -1;
@@ -313,7 +312,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 
-    MIFARE_DESFIRE (tag)->authenticated_key_no = NOAUTH;
+    MIFARE_DESFIRE (tag)->authenticated_key_no = NOT_YET_AUTHENTICATED;
     free (MIFARE_DESFIRE (tag)->session_key);
     MIFARE_DESFIRE (tag)->session_key = NULL;
 
@@ -887,10 +886,9 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
     } while (res[0] == 0xAF);
 
     if (res[0] != 0x00) {
-	errno = EDOOFUS; // TODO: Find something better
 	bytes = -1;
     }
-    
+
     return bytes;
 }
 
