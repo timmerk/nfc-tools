@@ -45,6 +45,30 @@
 // TODO Remove this
 #include <libutil.h>
 
+// TODO Add some pragma to pack this.
+struct mifare_desfire_raw_file_settings {
+    uint8_t file_type;
+    uint8_t communication_settings;
+    uint16_t access_rights;
+    union {
+	struct {
+	    uint8_t file_size[3];
+	} standard_file;
+	struct {
+	    int32_t lower_limit;
+	    int32_t upper_limit;
+	    int32_t limited_credit_value;
+	    uint8_t limited_credit_enabled;
+	} value_file;
+	struct {
+	    uint8_t record_size[3];
+	    uint8_t max_number_of_records[3];
+	    uint8_t current_number_of_records[3];
+	} linear_record_file;
+    } settings;
+};
+
+
 static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
 static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
 static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data);
@@ -169,10 +193,20 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
  * Miscellaneous low-level memory manipulation functions.
  */
 
-static void	*memdup(void *p, size_t n);
+static void	*memdup (void *p, size_t n);
+
+static int32_t
+le24toh (uint8_t data[3])
+{
+#if _BYTE_ORDER == _LITTLE_ENDIAN
+    return ((int8_t)(data[0]) << 16) + (data[1] << 8) + data[2];
+#else
+    return ((int8_t)(data[2]) << 16) + (data[1] << 8) + data[0];
+#endif
+}
 
 static void *
-memdup(void *p, size_t n)
+memdup (void *p, size_t n)
 {
     void *res;
     if ((res = malloc (n))) {
@@ -666,7 +700,30 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
-    memcpy (settings, res+1, BUFFER_SIZE (res)-1);  // FIXME endianness (loads!)
+    struct mifare_desfire_raw_file_settings raw_settings;
+    memcpy (&raw_settings, res+1, BUFFER_SIZE (res)-1);
+
+    settings->file_type = raw_settings.file_type;
+    settings->access_rights = raw_settings.access_rights;
+    
+    switch (settings->file_type) {
+	case MDFT_STANDARD_DATA_FILE:
+	case MDFT_BACKUP_DATA_FILE:
+	    settings->settings.standard_file.file_size = le24toh (raw_settings.settings.standard_file.file_size);
+	    break;
+	case MDFT_VALUE_FILE_WITH_BACKUP:
+	    settings->settings.value_file.lower_limit = le32toh (raw_settings.settings.value_file.lower_limit);
+	    settings->settings.value_file.upper_limit = le32toh (raw_settings.settings.value_file.upper_limit);
+	    settings->settings.value_file.limited_credit_value = le32toh (raw_settings.settings.value_file.limited_credit_value);
+	    break;
+	case MDFT_LINEAR_RECORD_FILE_WITH_BACKUP:
+	case MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP:
+	    settings->settings.linear_record_file.record_size = le24toh (raw_settings.settings.linear_record_file.record_size);
+	    settings->settings.linear_record_file.max_number_of_records = le24toh (raw_settings.settings.linear_record_file.max_number_of_records);
+	    settings->settings.linear_record_file.current_number_of_records = le24toh (raw_settings.settings.linear_record_file.current_number_of_records);
+	    break;
+    }
+
     return 0;
 }
 
