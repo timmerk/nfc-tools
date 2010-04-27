@@ -18,15 +18,17 @@ AC_C_INLINE
 AC_HEADER_STDBOOL
 AC_TYPE_INT16_T
 AC_TYPE_INT32_T
+AC_TYPE_OFF_T
 AC_TYPE_UINT8_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset pow])
+AC_CHECK_FUNCS([memset pow strerror])
 
 AC_CHECK_HEADERS([endian.h sys/endian.h])
 if test $ac_cv_header_endian_h = "no" -a $ac_cv_header_sys_endian_h = "no"; then
