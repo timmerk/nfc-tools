@@ -26,6 +26,15 @@
 
 #include "config.h"
 
+#if defined(HAVE_SYS_ENDIAN_H)
+#  include <sys/endian.h>
+#endif
+
+#if defined(HAVE_ENDIAN_H)
+#  define _BSD_SOURCE
+#  include <endian.h>
+#endif
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -813,6 +822,9 @@ mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t l
 	memcpy ((uint8_t *)buf + bytes, res + 1, frame_bytes);
 	bytes += frame_bytes;
 
+	BUFFER_CLEAR (cmd);
+	BUFFER_APPEND (cmd, 0xAF);
+
     } while (res[0] == 0xAF);
 
     if (res[0] != 0x00) {
@@ -857,6 +869,114 @@ mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t 
     }
 
     return bytes_send;
+}
+
+int
+mifare_desfire_get_value (MifareTag tag, uint8_t file_no, int32_t *value)
+{
+    if (!value)
+	return errno = EINVAL, -1;
+
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 2);
+    BUFFER_INIT (res, 9);
+
+    BUFFER_APPEND (cmd, 0x6C);
+    BUFFER_APPEND (cmd, file_no);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    *value = le32toh (*(int32_t *)(res + 1));
+
+    return 0;
+}
+
+int
+mifare_desfire_credit (MifareTag tag, uint8_t file_no, int32_t amount)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 10);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0x0C);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND_LE (cmd, amount, 4, 4);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+int
+mifare_desfire_debit (MifareTag tag, uint8_t file_no, int32_t amount)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 10);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0xDC);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND_LE (cmd, amount, 4, 4);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+int
+mifare_desfire_limited_credit (MifareTag tag, uint8_t file_no, int32_t amount)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 10);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0x1C);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND_LE (cmd, amount, 4, 4);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+int
+mifare_desfire_commit_transaction (MifareTag tag)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0xC7);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+int
+mifare_desfire_abort_transaction (MifareTag tag)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 1);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0xA7);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
 }
 
 

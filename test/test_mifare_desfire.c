@@ -210,11 +210,46 @@ test_mifare_desfire (void)
     res = mifare_desfire_change_file_settings (tag, std_data_file_id, MDCM_PLAIN, 0xEFFF);
     cut_assert_success ("mifare_desfire_change_file_settings()");
 
-    uint8_t buffer[60];
+    uint8_t buffer[120];
     res = mifare_desfire_read_data (tag, std_data_file_id, 10, 50, &buffer);
     cut_assert_success ("mifare_desfire_read_data()");
     cut_assert_equal_int (50, res, cut_message ("Wrong number of bytes read"));
     cut_assert_equal_memory ("to write to the card\0\0\0\0Another block of data.\0\0\0\0", 50, buffer, 50, cut_message ("Wrong data"));
+
+    res = mifare_desfire_read_data (tag, std_data_file_id, 0, 0, &buffer);
+    cut_assert_success ("mifare_desfire_read_data()");
+    cut_assert_equal_int (100, res, cut_message ("Wrong number of bytes read"));
+    cut_assert_equal_memory ("Some data to write to the"
+			     " card\0\0\0\0Another block of"
+			     " data.\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
+			     "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 100, buffer, 100, cut_message ("Wrong data"));
+
+    res = mifare_desfire_write_data (tag, std_data_file_id, 20, 5, (char *)"Test!");
+    cut_assert_equal_int (-1, res, cut_message ("Wrong return value"));
+    cut_assert_equal_int (PERMISSION_ERROR, MIFARE_DESFIRE (tag)->last_picc_error, cut_message ("Wrong PICC error"));
+
+    int32_t expected_value = 3;
+    for (int transaction = 0; transaction < 15; transaction++) {
+	// XXX Manipulate the backup file
+	
+	res = mifare_desfire_credit (tag, 4, 100);
+	cut_assert_success ("mifare_desfire_credit()");
+
+	res = mifare_desfire_debit (tag, 4, 97);
+	cut_assert_success ("mifare_desfire_debit()");
+
+	// XXX Manipulate records
+	
+	res = mifare_desfire_commit_transaction (tag);
+	cut_assert_success ("mifare_desfire_commit_transaction()");
+
+	int32_t value;
+	res = mifare_desfire_get_value (tag, 4, &value);
+	cut_assert_success ("mifare_desfire_get_value()");
+	cut_assert_equal_int (expected_value, value, cut_message ("Wrong value"));
+
+	expected_value += 3;
+    }
 
     uint8_t *files;
     size_t file_count;
@@ -249,7 +284,7 @@ test_mifare_desfire (void)
 
 		cut_assert_equal_int (0, settings.settings.value_file.lower_limit, cut_message ("Wrong lower limit"));
 		cut_assert_equal_int (1000, settings.settings.value_file.upper_limit, cut_message ("Wrong upper limit"));
-		cut_assert_equal_int (0, settings.settings.value_file.limited_credit_value, cut_message ("Wrong limited_credit value"));
+		cut_assert_equal_int (97, settings.settings.value_file.limited_credit_value, cut_message ("Wrong limited_credit value"));
 		cut_assert_equal_int (0, settings.settings.value_file.limited_credit_enabled, cut_message ("Wrong limited_credit enable state"));
 		break;
 	    case 5:
