@@ -716,6 +716,7 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
 	    settings->settings.value_file.lower_limit = le32toh (raw_settings.settings.value_file.lower_limit);
 	    settings->settings.value_file.upper_limit = le32toh (raw_settings.settings.value_file.upper_limit);
 	    settings->settings.value_file.limited_credit_value = le32toh (raw_settings.settings.value_file.limited_credit_value);
+	    settings->settings.value_file.limited_credit_enabled = raw_settings.settings.value_file.limited_credit_enabled;
 	    break;
 	case MDFT_LINEAR_RECORD_FILE_WITH_BACKUP:
 	case MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP:
