@@ -127,7 +127,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 #if _BYTE_ORDER != _LITTLE_ENDIAN
 #define BUFFER_APPEND_LE(buffer, data, data_size, field_size) \
     do { \
-	printf ("append (%p, %lu, %p, %d (%d))\n", buffer, __##buffer##_n, data, (int) data_size, (int) field_size); \
+	printf ("append (%p, %lu, %p, %d (%d))\n", buffer, __##buffer##_n, (void *)(&data), (int) data_size, (int) field_size); \
 	size_t __data_size = data_size; \
 	size_t __field_size = field_size; \
 	while (__field_size--, __data_size--) { \
