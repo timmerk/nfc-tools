@@ -228,9 +228,15 @@ test_mifare_desfire (void)
     cut_assert_equal_int (-1, res, cut_message ("Wrong return value"));
     cut_assert_equal_int (PERMISSION_ERROR, MIFARE_DESFIRE (tag)->last_picc_error, cut_message ("Wrong PICC error"));
 
-    int32_t expected_value = 3;
+    int32_t expected_value = 0;
     for (int transaction = 0; transaction < 15; transaction++) {
-	// XXX Manipulate the backup file
+	
+	char data_buffer[3];
+
+	sprintf (data_buffer, "%02d", transaction);
+
+	res = mifare_desfire_write_data (tag, 5, 3*transaction, 3, data_buffer);
+	cut_assert_success ("mifare_desfire_write_data()");
 	
 	res = mifare_desfire_credit (tag, 4, 100);
 	cut_assert_success ("mifare_desfire_credit()");
@@ -238,17 +244,37 @@ test_mifare_desfire (void)
 	res = mifare_desfire_debit (tag, 4, 97);
 	cut_assert_success ("mifare_desfire_debit()");
 
-	// XXX Manipulate records
-	
-	res = mifare_desfire_commit_transaction (tag);
-	cut_assert_success ("mifare_desfire_commit_transaction()");
+	res = mifare_desfire_write_record (tag, 0, 2, 2, data_buffer);
+	cut_assert_success ("mifare_desfire_write_record()");
+
+	res = mifare_desfire_write_record (tag, 0, 0, 2, (char *)"r ");
+	cut_assert_success("mifare_desfire_write_record()");
+
+	res = mifare_desfire_read_data (tag, 5, 0, 0, buffer);
+	cut_assert_success ("mifare_desfire_read_data()");
+
+	char ref_buffer[64];
+	memset (ref_buffer, '\0', 64);
+	for (int n = 0; n < transaction; n++) {
+	    sprintf (ref_buffer + 3 * n, "%02d", n);
+	}
+
+	cut_assert_equal_int (64, res, cut_message ("Wrong number of bytes read"));
+	cut_assert_equal_memory (buffer, 64, ref_buffer, 64, cut_message ("Wrong data"));
 
 	int32_t value;
 	res = mifare_desfire_get_value (tag, 4, &value);
 	cut_assert_success ("mifare_desfire_get_value()");
 	cut_assert_equal_int (expected_value, value, cut_message ("Wrong value"));
+	
+	res = mifare_desfire_commit_transaction (tag);
+	cut_assert_success ("mifare_desfire_commit_transaction()");
 
 	expected_value += 3;
+
+	res = mifare_desfire_get_value (tag, 4, &value);
+	cut_assert_success ("mifare_desfire_get_value()");
+	cut_assert_equal_int (expected_value, value, cut_message ("Wrong value"));
     }
 
     uint8_t *files;
@@ -276,7 +302,7 @@ test_mifare_desfire (void)
 		// FIXME This sucks!
 		cut_assert_equal_int (10, settings.settings.linear_record_file.max_number_of_records[0], cut_message ("Wrong max number of records"));
 		// FIXME This sucks!
-		cut_assert_equal_int (0, settings.settings.linear_record_file.current_number_of_records[0], cut_message ("Wrong current number of records"));
+		cut_assert_equal_int (9, settings.settings.linear_record_file.current_number_of_records[0], cut_message ("Wrong current number of records"));
 		break;
 	    case 4:
 		cut_assert_equal_int (MDFT_VALUE_FILE_WITH_BACKUP, settings.file_type, cut_message ("Wrong file type"));

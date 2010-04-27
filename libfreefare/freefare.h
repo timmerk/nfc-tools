@@ -282,6 +282,9 @@ int		 mifare_desfire_get_value (MifareTag tag, uint8_t file_no, int32_t *value);
 int		 mifare_desfire_credit (MifareTag tag, uint8_t file_no, int32_t amount);
 int		 mifare_desfire_debit (MifareTag tag, uint8_t file_no, int32_t amount);
 int		 mifare_desfire_limited_credit (MifareTag tag, uint8_t file_no, int32_t amount);
+ssize_t		 mifare_desfire_write_record (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data);
+ssize_t		 mifare_desfire_read_records (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf);
+int		 mifare_desfire_clear_record_file (MifareTag tag, uint8_t file_no);
 int		 mifare_desfire_commit_transaction (MifareTag tag);
 int		 mifare_desfire_abort_transaction (MifareTag tag);
 
