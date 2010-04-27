@@ -83,6 +83,7 @@ static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8
 
 #define BUFFER_SIZE(buffer_name) (__##buffer_name##_n)
 
+#define BUFFER_CLEAR(buffer_name) (__##buffer_name##_n = 0)
 /*
  * Append one byte of data to the buffer buffer_name.
  */
@@ -98,7 +99,7 @@ static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8
     do { \
 	size_t __n = 0; \
 	while (__n < size) { \
-	    buffer_name[__##buffer_name##_n++] = data[__n++]; \
+	    buffer_name[__##buffer_name##_n++] = (data)[__n++]; \
 	} \
     } while (0)
 
@@ -148,7 +149,7 @@ static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8
 	if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, __##msg##_n, res, &__##res##_n))) \
 	    return errno = EIO, -1; \
         hexdump (res, __##res##_n, "<--- ", 0); \
-	if ((1 == __##res##_n) && (OPERATION_OK != res[0])) \
+	if ((1 == __##res##_n) && (OPERATION_OK != res[0]) && (ADDITIONAL_FRAME != res[0])) \
 	    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1; \
     } while (0)
 
@@ -780,6 +781,82 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
     return 0;
+}
+
+
+/*
+ * Data manipulation commands.
+ */
+
+ssize_t
+mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf)
+{
+    ssize_t bytes = 0;
+
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 8);
+    BUFFER_INIT (res, MAX_RES_SIZE);
+
+    BUFFER_APPEND (cmd, 0xBD);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND_LE (cmd, offset, 3, 4);
+    BUFFER_APPEND_LE (cmd, length, 3, 4);
+
+    do {
+	ssize_t frame_bytes;
+
+	DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+	frame_bytes = BUFFER_SIZE (res) - 1;
+	memcpy ((uint8_t *)buf + bytes, res + 1, frame_bytes);
+	bytes += frame_bytes;
+
+    } while (res[0] == 0xAF);
+
+    if (res[0] != 0x00) {
+	errno = EDOOFUS; // TODO: Find something better
+	bytes = -1;
+    }
+    
+    return bytes;
+}
+
+ssize_t
+mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+{
+    size_t bytes_left;
+    size_t bytes_send = 0;
+
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 60);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0x3D);
+    BUFFER_APPEND (cmd, file_no);
+    BUFFER_APPEND_LE (cmd, offset, 3, 4);
+    BUFFER_APPEND_LE (cmd, length, 3, 4);
+
+    bytes_left = 52;
+
+    while (bytes_send < length) {
+	size_t frame_bytes = (bytes_left < length) ? bytes_left : length;
+
+	BUFFER_APPEND_BYTES (cmd, (uint8_t *)data + bytes_send, frame_bytes);
+
+	DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+	bytes_send += frame_bytes;
+
+	BUFFER_CLEAR (cmd);
+	BUFFER_APPEND (cmd, 0xAF);
+	bytes_left = 0x59;
+    }
+
+    return bytes_send;
 }
 
 

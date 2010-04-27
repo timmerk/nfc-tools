@@ -276,6 +276,9 @@ int		 mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, 
 int		 mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
 int		 mifare_desfire_delete_file (MifareTag tag, uint8_t file_no);
 
+ssize_t		 mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf);
+ssize_t		 mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data);
+
 char		*mifare_desfire_get_uid(MifareTag tag);
 
 MifareDESFireKey mifare_desfire_des_key_new (uint8_t value[8]);
