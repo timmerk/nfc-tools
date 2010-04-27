@@ -47,9 +47,11 @@
 
 static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
 static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
+static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data);
+static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf);
 
 // TODO Check this.
-#define MAX_RES_SIZE 60
+#define MAX_FRAME_SIZE 60
 
 #define NOAUTH 255
 
@@ -510,7 +512,7 @@ mifare_desfire_get_application_ids (MifareTag tag, MifareDESFireAID *aids[], siz
     ASSERT_MIFARE_DESFIRE (tag);
 
     BUFFER_INIT (cmd, 1);
-    BUFFER_INIT (res, MAX_RES_SIZE);
+    BUFFER_INIT (res, MAX_FRAME_SIZE);
 
     BUFFER_APPEND (cmd, 0x6A);
 
@@ -797,8 +799,8 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
  * Data manipulation commands.
  */
 
-ssize_t
-mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf)
+static ssize_t
+read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf)
 {
     ssize_t bytes = 0;
 
@@ -806,9 +808,9 @@ mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t l
     ASSERT_MIFARE_DESFIRE (tag);
 
     BUFFER_INIT (cmd, 8);
-    BUFFER_INIT (res, MAX_RES_SIZE);
+    BUFFER_INIT (res, MAX_FRAME_SIZE);
 
-    BUFFER_APPEND (cmd, 0xBD);
+    BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND_LE (cmd, offset, 3, 4);
     BUFFER_APPEND_LE (cmd, length, 3, 4);
@@ -836,7 +838,13 @@ mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t l
 }
 
 ssize_t
-mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf)
+{
+    return read_data (tag, 0xBD, file_no, offset, length, buf);
+}
+
+static ssize_t
+write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data)
 {
     size_t bytes_left;
     size_t bytes_send = 0;
@@ -844,10 +852,10 @@ mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
-    BUFFER_INIT (cmd, 60);
+    BUFFER_INIT (cmd, MAX_FRAME_SIZE);
     BUFFER_INIT (res, 1);
 
-    BUFFER_APPEND (cmd, 0x3D);
+    BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND_LE (cmd, offset, 3, 4);
     BUFFER_APPEND_LE (cmd, length, 3, 4);
@@ -869,6 +877,12 @@ mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t 
     }
 
     return bytes_send;
+}
+
+ssize_t
+mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+{
+    return write_data (tag, 0x3D, file_no, offset, length, data);
 }
 
 int
@@ -941,6 +955,35 @@ mifare_desfire_limited_credit (MifareTag tag, uint8_t file_no, int32_t amount)
     BUFFER_APPEND (cmd, 0x1C);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND_LE (cmd, amount, 4, 4);
+
+    DESFIRE_TRANSCEIVE (tag, cmd, res);
+
+    return 0;
+}
+
+ssize_t
+mifare_desfire_write_record (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
+{
+    return write_data (tag, 0x3B, file_no, offset, length, data);
+}
+
+ssize_t
+mifare_desfire_read_records (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf)
+{
+    return read_data (tag, 0xBB, file_no, offset, length, buf);
+}
+
+int
+mifare_desfire_clear_record_file (MifareTag tag, uint8_t file_no)
+{
+    ASSERT_ACTIVE (tag);
+    ASSERT_MIFARE_DESFIRE (tag);
+
+    BUFFER_INIT (cmd, 2);
+    BUFFER_INIT (res, 1);
+
+    BUFFER_APPEND (cmd, 0xEB);
+    BUFFER_APPEND (cmd, file_no);
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
