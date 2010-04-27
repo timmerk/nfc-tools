@@ -203,6 +203,8 @@ MifareDESFireAID mifare_desfire_aid_new_with_mad_aid (MadAid mad_aid, uint8_t n)
 struct mifare_desfire_key;
 typedef struct mifare_desfire_key *MifareDESFireKey;
 
+#pragma pack (push)
+#pragma pack (1)
 struct mifare_desfire_version_info {
     struct {
 	uint8_t vendor_id;
@@ -227,6 +229,7 @@ struct mifare_desfire_version_info {
     uint8_t production_week;
     uint8_t production_year;
 };
+#pragma pack (pop)
 
 struct mifare_desfire_file_settings {
     uint8_t file_type;
