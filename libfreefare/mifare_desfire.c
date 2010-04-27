@@ -704,6 +704,7 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
     memcpy (&raw_settings, res+1, BUFFER_SIZE (res)-1);
 
     settings->file_type = raw_settings.file_type;
+    settings->communication_settings = raw_settings.communication_settings;
     settings->access_rights = raw_settings.access_rights;
     
     switch (settings->file_type) {
