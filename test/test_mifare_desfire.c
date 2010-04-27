@@ -199,20 +199,80 @@ test_mifare_desfire (void)
     res = mifare_desfire_create_cyclic_record_file (tag, 0, MDCM_PLAIN, 0xEEEE, 4, 10);
     cut_assert_success ("mifare_desfire_create_cyclic_record_file()");
 
-#if 0
-    res = mifare_desfire_write_data (tag, std_data_file_id, PLAIN, 0, 30, (uint8_t *)"Some data to write to the card");
+    res = mifare_desfire_write_data (tag, std_data_file_id, 0, 30, (uint8_t *)"Some data to write to the card");
     cut_assert_success ("mifare_desfire_write_data()");
+    cut_assert_equal_int (30, res, cut_message ("Wrong number of bytes writen"));
 
-    res = mifare_desfire_write_data (tag, std_data_file_id, PLAIN, 34, 22, (uint8_t *)"Another block of data.");
+    res = mifare_desfire_write_data (tag, std_data_file_id, 34, 22, (uint8_t *)"Another block of data.");
     cut_assert_success ("mifare_desfire_write_data()");
+    cut_assert_equal_int (22, res, cut_message ("Wrong number of bytes writen"));
 
-    res = mifare_desfire_change_file_settings (tag, std_data_file_id, PLAIN, 0xEFFF);
+    res = mifare_desfire_change_file_settings (tag, std_data_file_id, MDCM_PLAIN, 0xEFFF);
     cut_assert_success ("mifare_desfire_change_file_settings()");
 
-    res = mifare_desfire_read_data (tag, std_data_file_id, PLAIN, 10, 50, buffer, &count);
+    uint8_t buffer[60];
+    res = mifare_desfire_read_data (tag, std_data_file_id, 10, 50, &buffer);
     cut_assert_success ("mifare_desfire_read_data()");
+    cut_assert_equal_int (50, res, cut_message ("Wrong number of bytes read"));
+    cut_assert_equal_memory ("to write to the card\0\0\0\0Another block of data.\0\0\0\0", 50, buffer, 50, cut_message ("Wrong data"));
 
-#endif
+    uint8_t *files;
+    size_t file_count;
+    res = mifare_desfire_get_file_ids (tag, &files, &file_count);
+    cut_assert_success ("mifare_desfire_get_file_ids()");
+    cut_assert_equal_int (4, file_count, cut_message ("Wrong number of files"));
+
+    for (size_t i=0; i<file_count;i++) {
+	if ((files[i] != 0) && (files[i] != 4) &&
+	    (files[i] != 5) && (files[i] != 15)) {
+	    cut_fail ("File %d should not exist.", files[i]);
+	}
+
+	struct mifare_desfire_file_settings settings;
+	res = mifare_desfire_get_file_settings (tag, files[i], &settings);
+	cut_assert_success ("mifare_desfire_get_file_settings()");
+	
+	switch (files[i]) {
+	    case 0:
+		cut_assert_equal_int (MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP, settings.file_type, cut_message ("Wrong file type"));
+		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
+		// FIXME This sucks!
+		cut_assert_equal_int (4, settings.settings.linear_record_file.record_size[0], cut_message ("Wrong record size"));
+		// FIXME This sucks!
+		cut_assert_equal_int (10, settings.settings.linear_record_file.max_number_of_records[0], cut_message ("Wrong max number of records"));
+		// FIXME This sucks!
+		cut_assert_equal_int (0, settings.settings.linear_record_file.current_number_of_records[0], cut_message ("Wrong current number of records"));
+		break;
+	    case 4:
+		cut_assert_equal_int (MDFT_VALUE_FILE_WITH_BACKUP, settings.file_type, cut_message ("Wrong file type"));
+		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
+
+		cut_assert_equal_int (0, settings.settings.value_file.lower_limit, cut_message ("Wrong lower limit"));
+		cut_assert_equal_int (1000, settings.settings.value_file.upper_limit, cut_message ("Wrong upper limit"));
+		cut_assert_equal_int (0, settings.settings.value_file.limited_credit_value, cut_message ("Wrong limited_credit value"));
+		cut_assert_equal_int (0, settings.settings.value_file.limited_credit_enabled, cut_message ("Wrong limited_credit enable state"));
+		break;
+	    case 5:
+		cut_assert_equal_int (MDFT_BACKUP_DATA_FILE, settings.file_type, cut_message ("Wrong file type"));
+		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
+		// FIXME This sucks!
+		cut_assert_equal_int (64, settings.settings.standard_file.file_size[0], cut_message ("Wrong file size"));
+		break;
+	    case 15:
+		cut_assert_equal_int (MDFT_STANDARD_DATA_FILE, settings.file_type, cut_message ("Wrong file type"));
+		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
+		// FIXME This sucks!
+		cut_assert_equal_int (100, settings.settings.standard_file.file_size[0], cut_message ("Wrong file size"));
+		break;
+	    default:
+		cut_fail ("Wow!  Cosmic ray!");
+	}
+
+	res = mifare_desfire_delete_file (tag, files[i]);
+	cut_assert_success ("mifare_desfire_delete_file()");
+    }
+
+    free (files);
 
     res = mifare_desfire_select_application (tag, 0);
     cut_assert_success ("mifare_desfire_select_application()");
