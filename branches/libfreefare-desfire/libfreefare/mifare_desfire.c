@@ -80,7 +80,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
  * BUFFER_APPEND_BYTES (data, x, 2);
  *                             // data -> [ 12, 56, 34, xx, xx ]
  * BUFFER_SIZE (data);         // size -> 3
- * BUFFER_APPEND_LE (data, x, 2, 2);
+ * BUFFER_APPEND_LE (data, x, 2, sizeof (x));
  *                             // data -> [ 12, 56, 34, 34, 56 ]
  * BUFFER_SIZE (data);         // size -> 5
  */
@@ -479,7 +479,7 @@ mifare_desfire_create_application (MifareTag tag, MifareDESFireAID aid, uint8_t 
     BUFFER_INIT (res, 1);
 
     BUFFER_APPEND (cmd, 0xCA);
-    BUFFER_APPEND_LE (cmd, aid->data, 3, 3);
+    BUFFER_APPEND_LE (cmd, aid->data, sizeof (aid->data), sizeof (aid->data));
     BUFFER_APPEND (cmd, settings);
     BUFFER_APPEND (cmd, key_no);
 
@@ -498,7 +498,7 @@ mifare_desfire_delete_application (MifareTag tag, MifareDESFireAID aid)
     BUFFER_INIT (res, 1);
 
     BUFFER_APPEND (cmd, 0xDA);
-    BUFFER_APPEND_LE (cmd, aid->data, 3, 3);
+    BUFFER_APPEND_LE (cmd, aid->data, sizeof (aid->data), sizeof (aid->data));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -682,7 +682,7 @@ mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t com
     BUFFER_APPEND (cmd, 0x5F);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
+    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -701,8 +701,8 @@ create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communica
     BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
-    BUFFER_APPEND_LE (cmd, file_size, 3, 4);
+    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, file_size, 3, sizeof (uint32_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -733,10 +733,10 @@ mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t commun
     BUFFER_APPEND (cmd, 0xCC);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
-    BUFFER_APPEND_LE (cmd, lower_limit, 4, 4);
-    BUFFER_APPEND_LE (cmd, upper_limit, 4, 4);
-    BUFFER_APPEND_LE (cmd, value, 4, 4);
+    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, lower_limit, 4, sizeof (int32_t));
+    BUFFER_APPEND_LE (cmd, upper_limit, 4, sizeof (int32_t));
+    BUFFER_APPEND_LE (cmd, value, 4, sizeof (int32_t));
     BUFFER_APPEND (cmd, limited_credit_enable);
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
@@ -756,9 +756,9 @@ create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communica
     BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, 2);
-    BUFFER_APPEND_LE (cmd, record_size, 3, 4);
-    BUFFER_APPEND_LE (cmd, max_number_of_records, 3, 4);
+    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, record_size, 3, sizeof (uint32_t));
+    BUFFER_APPEND_LE (cmd, max_number_of_records, 3, sizeof (uint32_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -812,8 +812,8 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 
     BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, offset, 3, 4);
-    BUFFER_APPEND_LE (cmd, length, 3, 4);
+    BUFFER_APPEND_LE (cmd, offset, 3, sizeof (off_t));
+    BUFFER_APPEND_LE (cmd, length, 3, sizeof (size_t));
 
     do {
 	ssize_t frame_bytes;
@@ -857,8 +857,8 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 
     BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, offset, 3, 4);
-    BUFFER_APPEND_LE (cmd, length, 3, 4);
+    BUFFER_APPEND_LE (cmd, offset, 3, sizeof (off_t));
+    BUFFER_APPEND_LE (cmd, length, 3, sizeof (size_t));
 
     bytes_left = 52;
 
@@ -918,7 +918,7 @@ mifare_desfire_credit (MifareTag tag, uint8_t file_no, int32_t amount)
 
     BUFFER_APPEND (cmd, 0x0C);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, amount, 4, 4);
+    BUFFER_APPEND_LE (cmd, amount, 4, sizeof (int32_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -936,7 +936,7 @@ mifare_desfire_debit (MifareTag tag, uint8_t file_no, int32_t amount)
 
     BUFFER_APPEND (cmd, 0xDC);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, amount, 4, 4);
+    BUFFER_APPEND_LE (cmd, amount, 4, sizeof (int32_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -954,7 +954,7 @@ mifare_desfire_limited_credit (MifareTag tag, uint8_t file_no, int32_t amount)
 
     BUFFER_APPEND (cmd, 0x1C);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, amount, 4, 4);
+    BUFFER_APPEND_LE (cmd, amount, 4, sizeof (int32_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
