@@ -45,7 +45,8 @@
 // TODO Remove this
 #include <libutil.h>
 
-// TODO Add some pragma to pack this.
+#pragma pack (push)
+#pragma pack (1)
 struct mifare_desfire_raw_file_settings {
     uint8_t file_type;
     uint8_t communication_settings;
@@ -67,7 +68,7 @@ struct mifare_desfire_raw_file_settings {
 	} linear_record_file;
     } settings;
 };
-
+#pragma pack (pop)
 
 static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
 static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
