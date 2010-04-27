@@ -194,15 +194,12 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
  */
 
 static void	*memdup (void *p, size_t n);
+static int32_t	 le24toh (uint8_t data[3]);
 
 static int32_t
 le24toh (uint8_t data[3])
 {
-#if _BYTE_ORDER == _LITTLE_ENDIAN
-    return ((int8_t)(data[0]) << 16) + (data[1] << 8) + data[2];
-#else
-    return ((int8_t)(data[2]) << 16) + (data[1] << 8) + data[0];
-#endif
+    return (data[2] << 16) | (data[1] << 8) | data[0];
 }
 
 static void *
