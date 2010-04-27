@@ -179,6 +179,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 // FIXME: remove debugging stuff
 #define DESFIRE_TRANSCEIVE(tag, msg, res) \
     do { \
+	errno = 0; \
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK; \
         hexdump (msg, __##msg##_n, "---> ", 0); \
 	if (!(nfc_initiator_transceive_dep_bytes (tag->device, msg, __##msg##_n, res, &__##res##_n))) \
