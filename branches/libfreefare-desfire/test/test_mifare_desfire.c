@@ -297,12 +297,9 @@ test_mifare_desfire (void)
 	    case 0:
 		cut_assert_equal_int (MDFT_CYCLIC_RECORD_FILE_WITH_BACKUP, settings.file_type, cut_message ("Wrong file type"));
 		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
-		// FIXME This sucks!
-		cut_assert_equal_int (4, settings.settings.linear_record_file.record_size[0], cut_message ("Wrong record size"));
-		// FIXME This sucks!
-		cut_assert_equal_int (10, settings.settings.linear_record_file.max_number_of_records[0], cut_message ("Wrong max number of records"));
-		// FIXME This sucks!
-		cut_assert_equal_int (9, settings.settings.linear_record_file.current_number_of_records[0], cut_message ("Wrong current number of records"));
+		cut_assert_equal_int (4, settings.settings.linear_record_file.record_size, cut_message ("Wrong record size"));
+		cut_assert_equal_int (10, settings.settings.linear_record_file.max_number_of_records, cut_message ("Wrong max number of records"));
+		cut_assert_equal_int (9, settings.settings.linear_record_file.current_number_of_records, cut_message ("Wrong current number of records"));
 		break;
 	    case 4:
 		cut_assert_equal_int (MDFT_VALUE_FILE_WITH_BACKUP, settings.file_type, cut_message ("Wrong file type"));
@@ -316,14 +313,12 @@ test_mifare_desfire (void)
 	    case 5:
 		cut_assert_equal_int (MDFT_BACKUP_DATA_FILE, settings.file_type, cut_message ("Wrong file type"));
 		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
-		// FIXME This sucks!
-		cut_assert_equal_int (64, settings.settings.standard_file.file_size[0], cut_message ("Wrong file size"));
+		cut_assert_equal_int (64, settings.settings.standard_file.file_size, cut_message ("Wrong file size"));
 		break;
 	    case 15:
 		cut_assert_equal_int (MDFT_STANDARD_DATA_FILE, settings.file_type, cut_message ("Wrong file type"));
 		cut_assert_equal_int (MDCM_PLAIN, settings.communication_settings, cut_message ("Wrong communication settings"));
-		// FIXME This sucks!
-		cut_assert_equal_int (100, settings.settings.standard_file.file_size[0], cut_message ("Wrong file size"));
+		cut_assert_equal_int (100, settings.settings.standard_file.file_size, cut_message ("Wrong file size"));
 		break;
 	    default:
 		cut_fail ("Wow!  Cosmic ray!");

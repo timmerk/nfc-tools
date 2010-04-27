@@ -234,7 +234,7 @@ struct mifare_desfire_file_settings {
     uint16_t access_rights;
     union {
 	struct {
-	    uint8_t file_size[3];
+	    uint32_t file_size;
 	} standard_file;
 	struct {
 	    int32_t lower_limit;
@@ -243,9 +243,9 @@ struct mifare_desfire_file_settings {
 	    uint8_t limited_credit_enabled;
 	} value_file;
 	struct {
-	    uint8_t record_size[3];
-	    uint8_t max_number_of_records[3];
-	    uint8_t current_number_of_records[3];
+	    uint32_t record_size;
+	    uint32_t max_number_of_records;
+	    uint32_t current_number_of_records;
 	} linear_record_file;
     } settings;
 };
