@@ -1,18 +1,25 @@
-#summary desknfc - Downloading, Installation and use
+#summary DeskNFC - Download, install and use
 
 = Introduction =
+DeskNFC is a KDE4 plasmoid which offer NFC content access.
 
-Desknfc is a graphical user interface which offer NFC content access.
+You can see connected NFC devices, tags which are in field and tags content if available.
 
-You can see Devices list, tag list, content list and open content.
-Desknfc is written in C++, depends on Qt4 and KDE4 libs and use [nfcd] D-Bus bindings.
-It is a plasmoid for plasma-desktop since r317.
+DeskNFC is written in C++, depends on KDE4 libs (Qt4) and use [nfcd] D-Bus bindings.
 
 = Installation =
+== Requirements ==
+To run DeskNFC, you will need
+  * libnfc (>= 1.3.4);
+  * libfreefare (>= );
+  * libndef (>= ).
 
-You need to have CMake, Qt4 and KDE4 libs installed on your system.
+To build DeskNFC, you need to have on your system:
+  * CMake (>= );
+  * KDE4 libs (>= );
+  * and development files of run requirements.
 
-Then, you can fetch, compile and install desknfc.
+== Build ==
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/desknfc desknfc
 cd desknfc
@@ -20,14 +27,20 @@ mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 make
-su -c 'make install clean'
--> type your root password <-
 }}}
 
-Once these commands succeed, be sure that nfcd is launched and type:
+== Test ==
+Once these commands succeed, be sure that NFCd is launched and :
 {{{
 plasmoidviewer desknfc
 }}}
-Or put it on your desktop from the plasmoid adding menu of KDE4.
 
-Nfcd is needed all along the execution of desknfc.
+== Usage ==
+If it works fine, you can install it:
+{{{
+sudo make install
+}}}
+
+An put it on your desktop from the plasmoid adding menu of KDE4.
+
+Note: NFCd is needed all along the execution of DeskNFC.
