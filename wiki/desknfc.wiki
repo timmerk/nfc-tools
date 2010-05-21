@@ -8,15 +8,10 @@ You can see connected NFC devices, tags which are in field and tags content if a
 DeskNFC is written in C++, depends on KDE4 libs (Qt4) and use [nfcd] D-Bus bindings.
 
 = Requirements =
-To run DeskNFC, you will need
-  * [http://www.libnfc.org/documentation/installation libnfc] (>= 1.3.4);
-  * [http://code.google.com/p/nfc-tools/wiki/libfreefare libfreefare] (>= r270);
-  * [http://code.google.com/p/libndef/source/browse/trunk/INSTALL libndef] (>= 1.0.1).
-
 To build DeskNFC, you need to have on your system:
   * CMake (>= 2.6);
   * KDE4 libs (>= 4.3);
-  * and development files of run requirements.
+  * NFCd.
 
 = Build =
 {{{
