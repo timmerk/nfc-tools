@@ -4,14 +4,16 @@
 
 NFCd is a daemon which access NFC Devices and Targets. It offer D-Bus services to get devices list, targets list, target content...
 
-Nfcd is written in C++, it use Qt, libfreefare, libndef and libnfc. 
+NFCd is written in C++, it use Qt, libfreefare, libndef and libnfc. 
 
-= Installation =
+= Requirements =
+  * CMake (>= 2.6)
+  * Qt4 core (>= 4.3)
+  * [http://www.libnfc.org/documentation/installation libnfc] (>= 1.3.4);
+  * [http://code.google.com/p/nfc-tools/wiki/libfreefare libfreefare] (>= r270);
+  * [http://code.google.com/p/libndef/source/browse/trunk/INSTALL libndef] (>= 1.0.1).
 
-You need to have CMake, Qt4 (core), libfreefare, libndef and libnfc installed on your system.
-
-Then, you can compile and use nfcd.
-
+= Build =
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/nfcd nfcd
 cd nfcd
