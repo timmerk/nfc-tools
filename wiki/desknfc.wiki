@@ -6,6 +6,7 @@ Desknfc is a graphical user interface which offer NFC content access.
 
 You can see Devices list, tag list, content list and open content.
 Desknfc is written in C++, depends on Qt4 and KDE4 libs and use [nfcd] D-Bus bindings.
+It is a plasmoid for plasma-desktop since r317.
 
 = Installation =
 
@@ -25,9 +26,8 @@ su -c 'make install clean'
 
 Once these commands succeed, be sure that nfcd is launched and type:
 {{{
-desknfc
+plasmoidviewer desknfc
 }}}
-
-You can also choose not to install desknfc, so just type "make" instead of "su -c 'make install'", and launch the desknfc binary which is in the build directory.
+Or put it on your desktop from the plasmoid adding menu of KDE4.
 
 Nfcd is needed all along the execution of desknfc.
