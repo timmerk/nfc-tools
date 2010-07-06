@@ -56,7 +56,7 @@ main(int argc, char *argv[])
         }
 
 	int res;
-        char *tag_uid = mifare_desfire_get_uid (tags[i]);
+        char *tag_uid = freefare_get_tag_uid (tags[i]);
 
 	struct mifare_desfire_version_info info;
 

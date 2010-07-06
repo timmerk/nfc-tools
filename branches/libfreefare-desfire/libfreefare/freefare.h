@@ -301,8 +301,6 @@ int		 mifare_desfire_clear_record_file (MifareTag tag, uint8_t file_no);
 int		 mifare_desfire_commit_transaction (MifareTag tag);
 int		 mifare_desfire_abort_transaction (MifareTag tag);
 
-char		*mifare_desfire_get_uid(MifareTag tag);
-
 MifareDESFireKey mifare_desfire_des_key_new (uint8_t value[8]);
 MifareDESFireKey mifare_desfire_3des_key_new (uint8_t value[16]);
 MifareDESFireKey mifare_desfire_des_key_new_with_version (uint8_t value[8]);
