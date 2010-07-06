@@ -570,3 +570,12 @@ test_mifare_desfire (void)
     mifare_desfire_key_free (key);
 #endif
 }
+
+void
+test_mifare_desfire_get_tag_friendly_name (void)
+{
+    const char *name = freefare_get_tag_friendly_name (tag);
+
+    cut_assert_not_null (name, cut_message ("freefare_get_tag_friendly_name() failed"));
+}
+
