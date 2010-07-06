@@ -136,11 +136,10 @@ int
 main(int argc, char *argv[])
 {
     int ch;
-    int error = 0;
+    int error = EXIT_SUCCESS;
     nfc_device_t *device = NULL;
     MifareTag *tags = NULL;
 
-    (void)argc, (void)argv;
     while ((ch = getopt (argc, argv, "fhy")) != -1) {
 	switch (ch) {
 	    case 'f':
@@ -168,7 +167,7 @@ main(int argc, char *argv[])
     tags = freefare_get_tags (device);
     if (!tags) {
 	nfc_disconnect (device);
-	errx (EXIT_FAILURE, "Error listing MIFARE classic tag.");
+	errx (EXIT_FAILURE, "Error listing Mifare Classic tag.");
     }
 
     for (int i = 0; (!error) && tags[i]; i++) {
