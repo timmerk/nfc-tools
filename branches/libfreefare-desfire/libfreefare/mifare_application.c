@@ -42,11 +42,11 @@ count_aids (const Mad mad, const MadAid aid)
 {
     size_t result = 0;
 
-    MifareSectorNumber s_max = (mad_get_version (mad) == 1) ? 0x0f : 0x27;
+    MifareClassicSectorNumber s_max = (mad_get_version (mad) == 1) ? 0x0f : 0x27;
 
     /* Count application sectors */
     MadAid c_aid;
-    for (MifareSectorNumber s = FIRST_SECTOR; s <= s_max; s++) {
+    for (MifareClassicSectorNumber s = FIRST_SECTOR; s <= s_max; s++) {
 	mad_get_aid (mad, s, &c_aid);
 	if (0 == aidcmp (aid, c_aid)) {
 	    result++;
@@ -73,47 +73,80 @@ aidcmp (const MadAid left, const MadAid right)
 /*
  * Allocates a new application into a MAD.
  */
-MifareSectorNumber *
+MifareClassicSectorNumber *
 mifare_application_alloc (Mad mad, MadAid aid, size_t size)
 {
+    uint8_t sector_map[40];
+    MifareClassicSectorNumber sector;
+    MadAid sector_aid;
+    MifareClassicSectorNumber *res = NULL;
+    ssize_t s = size;
+
     /*
      * Ensure the card does not already have the application registered.
      */
-    MifareSectorNumber *found;
+    MifareClassicSectorNumber *found;
     if ((found = mifare_application_find (mad, aid))) {
 	free (found);
 	return NULL;
     }
 
-    MifareSectorNumber *res = malloc (sizeof (*res) * (size+1));
-    res[size] = 0;
+    for (size_t i = 0; i < sizeof (sector_map); i++)
+	sector_map[i] = 0;
+
+    /*
+     * Try to minimize lost space and allocate as many large pages as possible
+     * when the target is a Mifare Classic 4k.
+     */
+    MadAid free_aid = { 0x00, 0x00 };
+    if (mad_get_version (mad) == 2) {
+	sector = 32;
+	while ((s >= 12*16) && sector < 40) {
+	    mad_get_aid (mad, sector, &sector_aid);
+	    if (0 == aidcmp (sector_aid, free_aid)) {
+		sector_map[sector] = 1;
+		s -= 15*16;
+	    }
+	    sector++;
+	}
+    }
+
+    sector = FIRST_SECTOR;
+    MifareClassicSectorNumber s_max = (mad_get_version (mad) == 1) ? 15 : 31;
+    while ((s > 0) && (sector <= s_max)) {
+	if (mad_sector_reserved (sector))
+	    continue;
+	mad_get_aid (mad, sector, &sector_aid);
+	if (0 == aidcmp (sector_aid, free_aid)) {
+	    sector_map[sector] = 1;
+	    s -= 3*16;
+	}
+	sector++;
+    }
 
     /*
      * Ensure the remaining free space is suficient before destroying the MAD.
      */
-    MadAid free_aid = { 0x00, 0x00 };
-    MifareSectorNumber *free_aids = mifare_application_find (mad, free_aid);
-    if (!free_aids)
+    if (s > 0)
 	return NULL;
 
+    int n = 0;
+    for (size_t i = FIRST_SECTOR; i < sizeof (sector_map); i++)
+	if (sector_map[i])
+	    n++;
 
-    for (size_t c = 0; c < size; c++) {
-	if (free_aids[c]) {
-	    res[c] = free_aids[c];
-	} else {
-	    free (res);
-	    res = NULL;
-	    break;
+    if (!(res = malloc (sizeof (*res) * (n+1))))
+	return NULL;
+
+    n = 0;
+    for (size_t i = FIRST_SECTOR; i < sizeof (sector_map); i++)
+	if (sector_map[i]) {
+	    res[n] = i;
+	    mad_set_aid (mad, i, aid);
+	    n++;
 	}
-    }
 
-    free (free_aids);
-
-    if (res) {
-	/* Update the MAD */
-	for (size_t c = 0; c < size; c++)
-	    mad_set_aid (mad, res[c], aid);
-    }
+    res[n] = 0;
 
     /* Return the list of allocated sectors */
     return res;
@@ -125,8 +158,8 @@ mifare_application_alloc (Mad mad, MadAid aid, size_t size)
 void
 mifare_application_free (Mad mad, MadAid aid)
 {
-    MifareSectorNumber *sectors = mifare_application_find (mad, aid);
-    MifareSectorNumber *p = sectors;
+    MifareClassicSectorNumber *sectors = mifare_application_find (mad, aid);
+    MifareClassicSectorNumber *p = sectors;
     MadAid free_aid = { 0x00, 0x00 };
     while (*p) {
 	mad_set_aid (mad, *p, free_aid);
@@ -144,14 +177,14 @@ mifare_application_free (Mad mad, MadAid aid)
 /*
  * Get all sector numbers of an application from the provided MAD.
  */
-MifareSectorNumber *
+MifareClassicSectorNumber *
 mifare_application_find (Mad mad, MadAid aid)
 {
-    MifareSectorNumber *res = NULL;
+    MifareClassicSectorNumber *res = NULL;
     size_t res_count = count_aids (mad, aid);
 
     if (res_count)
-	res = malloc (sizeof (*res) * res_count + 1);
+	res = malloc (sizeof (*res) * (res_count + 1));
 
     size_t r = FIRST_SECTOR, w = 0;
     if (res) {

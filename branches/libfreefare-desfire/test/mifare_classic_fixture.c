@@ -25,12 +25,13 @@ static MifareTag *tags = NULL;
 MifareTag tag = NULL;
 
 void
-setup ()
+cut_setup ()
 {
     int res;
 
     device = nfc_connect (NULL);
-    cut_assert_not_null (device, cut_message ("No NFC device found"));
+    if (!device)
+	cut_omit ("No device found");
 
     tags = freefare_get_tags (device);
     cut_assert_not_null (tags, cut_message ("freefare_get_tags() failed"));
@@ -44,18 +45,15 @@ setup ()
 	}
     }
 
-    if (!tag) {
-	cut_pend ("No MIFARE Classic tag on NFC device");
-    }
-
-    cut_assert_not_null (tag, cut_message ("No MIFARE Classic tag on NFC device"));
+    if (!tag)
+	cut_omit ("No MIFARE Classic tag on NFC device");
 
     res = mifare_classic_connect (tag);
     cut_assert_equal_int (0, res, cut_message ("mifare_classic_connect() failed"));
 }
 
 void
-teardown ()
+cut_teardown ()
 {
     if (tag)
 	mifare_classic_disconnect (tag);

@@ -146,10 +146,20 @@ test_mifare_ultralight_get_uid (void)
 {
     char *uid;
 
-    uid = mifare_ultralight_get_uid (tag);
+    uid = freefare_get_tag_uid (tag);
 
     cut_assert_not_null (uid, cut_message ("mifare_ultralight_get_uid() failed"));
     cut_assert_equal_int (14, strlen (uid), cut_message ("Wrong UID length"));
 
     free (uid);
 }
+
+void
+test_mifare_ultralight_tag_friendly_name (void)
+{
+    const char *name = freefare_get_tag_friendly_name (tag);
+
+    cut_assert_not_null (name, cut_message ("freefare_get_tag_friendly_name() failed"));
+}
+
+
