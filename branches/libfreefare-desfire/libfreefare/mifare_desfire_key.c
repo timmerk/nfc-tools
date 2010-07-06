@@ -103,14 +103,15 @@ void
 mifare_desfire_key_set_version (MifareDESFireKey key, uint8_t version)
 {
     for (int n = 0; n < 8; n++) {
-	key->data[n] &= 0xfe;
-	key->data[n] |= ((version & (1 << (7-n))) >> (7-n));
+	uint8_t version_bit = ((version & (1 << (7-n))) >> (7-n));
+	key->data[8+n] &= 0xfe;
+	key->data[8+n] |= version_bit;
 	if (key->type == T_DES) {
-	    key->data[8+n] = key->data[n];
+	    key->data[n] = key->data[8+n];
 	} else {
 	    // Write ~version to avoid turning a 3DES key into a DES key
-	    key->data[8+n] &= 0xfe;
-	    key->data[8+n] |= !((version & (1 << (7-n))) >> (7-n));
+	    key->data[n] &= 0xfe;
+	    key->data[n] |= ~version_bit;
 	}
     }
 }
