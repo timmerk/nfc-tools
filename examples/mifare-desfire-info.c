@@ -94,6 +94,8 @@ main(int argc, char *argv[])
 	printf ("    Protocol:             0x%02x\n", info.software.protocol);
 
 	free (tag_uid);
+
+	mifare_desfire_disconnect (tags[i]);
     }
 
     freefare_free_tags (tags);

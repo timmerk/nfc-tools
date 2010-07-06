@@ -123,6 +123,8 @@ main(int argc, char *argv[])
 		error = EXIT_FAILURE;
 		break;
 	    }
+
+	    mifare_desfire_disconnect (tags[i]);
 	}
 
 	free (tag_uid);
