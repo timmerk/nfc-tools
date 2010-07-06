@@ -244,7 +244,7 @@ main(int argc, char *argv[])
 	    MifareClassicBlock data;
 
 	    while (pos < encoded_size) {
-		memset (&data, '\0', sizeof (MifareClassicBlock));
+		bzero (data, sizeof (MifareClassicBlock));
 		memcpy (&data, tlv_data + pos, MIN (encoded_size - pos, sizeof (MifareClassicBlock)));
 		pos += sizeof (MifareClassicBlock);
 		if (bn == 0x07)

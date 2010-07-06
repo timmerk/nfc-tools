@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 
 #include <freefare.h>
 
@@ -83,8 +84,8 @@ mad_new (uint8_t version)
 	return NULL;
 
     mad->version = version;
-    memset (&(mad->sector_0x00), '\0', sizeof (mad->sector_0x00));
-    memset (&(mad->sector_0x10), '\0', sizeof (mad->sector_0x10));
+    bzero (&(mad->sector_0x00), sizeof (mad->sector_0x00));
+    bzero (&(mad->sector_0x10), sizeof (mad->sector_0x10));
 
     return mad;
 }
@@ -331,7 +332,7 @@ mad_set_version (Mad mad, uint8_t version)
 {
     if ((version == 2) && (mad->version == 1)) {
 	/* We use a larger MAD so initialise the new blocks */
-	memset (&(mad->sector_0x10), '\0', sizeof (mad->sector_0x10));
+	bzero (&(mad->sector_0x10), sizeof (mad->sector_0x10));
     }
     mad->version = version;
 }

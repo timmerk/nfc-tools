@@ -22,6 +22,7 @@
 #include <openssl/des.h>
 
 #include <string.h>
+#include <strings.h>
 
 #include <freefare.h>
 #include "freefare_internal.h"
@@ -85,7 +86,7 @@ mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, MifareDir
 {
     size_t offset = 0;
     uint8_t ivect[8];
-    memset (&ivect, '\0', sizeof (ivect));
+    bzero (ivect, sizeof (ivect));
 
     while (offset < data_size) {
 	mifare_des (key, data + offset, ivect, direction);
