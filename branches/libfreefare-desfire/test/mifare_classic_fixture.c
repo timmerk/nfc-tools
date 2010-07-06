@@ -41,26 +41,26 @@ cut_setup ()
 	if (!device)
 	    cut_omit ("nfc_connect() failed");
 
-    tags = freefare_get_tags (device);
-    cut_assert_not_null (tags, cut_message ("freefare_get_tags() failed"));
+	tags = freefare_get_tags (device);
+	cut_assert_not_null (tags, cut_message ("freefare_get_tags() failed"));
 
-    tag = NULL;
-    for (int i=0; tags[i]; i++) {
-	if ((freefare_get_tag_type(tags[i]) == CLASSIC_1K) ||
-	     (freefare_get_tag_type(tags[i]) == CLASSIC_4K)) {
-	    tag = tags[i];
-	    res = mifare_classic_connect (tag);
-	    cut_assert_equal_int (0, res, cut_message ("mifare_classic_connect() failed"));
-	    return;
+	tag = NULL;
+	for (int i=0; tags[i]; i++) {
+	    if ((freefare_get_tag_type(tags[i]) == CLASSIC_1K) ||
+		    (freefare_get_tag_type(tags[i]) == CLASSIC_4K)) {
+		tag = tags[i];
+		res = mifare_classic_connect (tag);
+		cut_assert_equal_int (0, res, cut_message ("mifare_classic_connect() failed"));
+		return;
+	    }
 	}
-    }
 	nfc_disconnect (device);
 	device = NULL;
 	freefare_free_tags (tags);
 	tags = NULL;
     }
 
-	cut_omit ("No MIFARE Classic tag on NFC device");
+    cut_omit ("No MIFARE Classic tag on NFC device");
 }
 
 void
