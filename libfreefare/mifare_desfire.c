@@ -391,7 +391,7 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
 
     data[0] = settings;
     iso14443a_crc (data, 1, data + 1);
-    memset (data+3, '\0', 5);
+    bzero (data+3, 5);
 
     mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND);
 
@@ -442,7 +442,7 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_k
 	if (old_key) {
 	    memcpy (data, old_key->data, 16);
 	} else {
-	    memset (data, '\0', 16);
+	    bzero (data, 16);
 	}
 	for (int n=0; n<16; n++) {
 	    data[n] ^= new_key->data[n];

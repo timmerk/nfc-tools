@@ -254,7 +254,7 @@ test_mifare_desfire (void)
 	cut_assert_success ("mifare_desfire_read_data()");
 
 	char ref_buffer[64];
-	memset (ref_buffer, '\0', 64);
+	bzero (ref_buffer, sizeof (ref_buffer));
 	for (int n = 0; n < transaction; n++) {
 	    sprintf (ref_buffer + 3 * n, "%02d", n);
 	}
