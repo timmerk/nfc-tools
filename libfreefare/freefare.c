@@ -153,6 +153,40 @@ freefare_get_tag_friendly_name (MifareTag tag)
 }
 
 /*
+ * Returns the UID of the provided tag.
+ */
+char *
+freefare_get_tag_uid (MifareTag tag)
+{
+    char *res = malloc (2 * tag->info.szUidLen + 1);
+    for (size_t i =0; i < tag->info.szUidLen; i++)
+	snprintf (res + 2*i, 3, "%02x", tag->info.abtUid[i]);
+    return res;
+}
+
+/*
+ * Free the provided tag.
+ */
+void
+freefare_free_tag (MifareTag tag)
+{
+    if (tag) {
+	switch (tag->tag_info->type) {
+	    case CLASSIC_1K:
+	    case CLASSIC_4K:
+		mifare_classic_tag_free (tag);
+		break;
+	    case DESFIRE_4K:
+		mifare_desfire_tag_free (tag);
+		break;
+	    case ULTRALIGHT:
+		mifare_ultralight_tag_free (tag);
+		break;
+	}
+    }
+}
+
+/*
  * Free the provided tag list.
  */
 void
@@ -160,18 +194,7 @@ freefare_free_tags (MifareTag *tags)
 {
     if (tags) {
 	for (int i=0; tags[i]; i++) {
-	    switch (tags[i]->tag_info->type) {
-		case CLASSIC_1K:
-		case CLASSIC_4K:
-		    mifare_classic_tag_free (tags[i]);
-		    break;
-		case DESFIRE_4K:
-		    mifare_desfire_tag_free (tags[i]);
-		    break;
-		case ULTRALIGHT:
-		    mifare_ultralight_tag_free (tags[i]);
-		    break;
-	    }
+	    freefare_free_tag(tags[i]);
 	}
 	free (tags);
     }

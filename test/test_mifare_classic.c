@@ -35,27 +35,6 @@ test_mifare_classic_authenticate (void)
 }
 
 void
-test_mifare_classic_read_sector_0 (void)
-{
-    int res;
-
-    cut_omit ("Requires a particular NFC tag");
-
-    MifareClassicKey k = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-    res = mifare_classic_authenticate (tag, 0x00, k, MFC_KEY_A);
-    cut_assert_equal_int (0, res, cut_message ("mifare_classic_authenticate() failed"));
-
-
-    MifareClassicBlock r;
-    res = mifare_classic_read (tag, 0x00, &r);
-    cut_assert_equal_int (0, res, cut_message ("mifare_classic_read() failed"));
-
-    MifareClassicBlock e = { 0xba, 0xc7, 0x7a, 0xfc, 0xfb, 0x88, 0x04, 0x00 , 0x46, 0x5d, 0x55, 0x96, 0x41, 0x10, 0x19, 0x08 };
-
-    cut_assert_equal_memory (e, sizeof (e), r, sizeof (r), cut_message ("Unexpected sector 0 value"));
-}
-
-void
 test_mifare_classic_get_data_block_permission (void)
 {
     int res;
@@ -120,14 +99,6 @@ test_mifare_classic_get_trailer_permission (void)
 }
 
 void
-test_mifare_classic_read_mad (void)
-{
-    cut_omit ("A blank MIFARE Classic does not have a MAD.  This test has to be moved in an appropriate test case.");
-    Mad mad = mad_read (tag);
-    cut_assert_not_null (mad, cut_message ("mad_read() failed"));
-}
-
-void
 test_mifare_classic_format (void)
 {
     int res;
@@ -151,7 +122,7 @@ test_mifare_classic_format (void)
     res = mifare_classic_write (tag, 0x3e, data);
     cut_assert_equal_int (0, res, cut_message ("mifare_classic_write() failed"));
 
-    res = mifare_classic_format_sector (tag, 0x3c);
+    res = mifare_classic_format_sector (tag, mifare_classic_block_sector (0x3c));
     cut_assert_equal_int (0, res, cut_message ("mifare_classic_format_sector() failed"));
 
     res = mifare_classic_read (tag, 0x3c, &data);
@@ -331,29 +302,19 @@ test_mifare_classic_get_uid (void)
 {
     char *uid;
 
-    uid = mifare_classic_get_uid (tag);
+    uid = freefare_get_tag_uid (tag);
 
-    cut_assert_not_null (uid, cut_message ("mifare_classic_get_uid() failed"));
+    cut_assert_not_null (uid, cut_message ("freefare_get_tag_uid() failed"));
     cut_assert_equal_int (8, strlen (uid), cut_message ("Wrong UID length"));
 
     free (uid);
 }
 
 void
-test_mifare_classic_sector_boundaries (void)
+test_mifare_classic_get_tag_friendly_name (void)
 {
-    cut_notify ("No MIFARE Classic target is required for this test");
-    for (int i=0; i < 32; i++) {
-	for (int j=0; j < 4; j++) {
-	    cut_assert_equal_int (4 * i, mifare_classic_first_sector_block (4 * i), cut_message ("Wrong first block number for block %d", i));
-	    cut_assert_equal_int (4 * i + 3, mifare_classic_last_sector_block (4 * i + j), cut_message ("Wrong last block number for block %d", i));
-	}
-    }
+    const char *name = freefare_get_tag_friendly_name (tag);
 
-    for (int i=0; i < 8; i++) {
-	for (int j=0; j < 16; j++) {
-	    cut_assert_equal_int (128 + 16 * i, mifare_classic_first_sector_block (128 + 16 * i), cut_message ("Wrong last block number for block %d", i));
-	    cut_assert_equal_int (128 + 16 * i + 15, mifare_classic_last_sector_block (128 + 16 * i + j), cut_message ("Wrong last block number for block %d", i));
-	}
-    }
+    cut_assert_not_null (name, cut_message ("freefare_get_tag_friendly_name() failed"));
 }
+

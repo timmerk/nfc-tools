@@ -84,7 +84,7 @@ mifare_ultralight_connect (MifareTag tag)
     ASSERT_MIFARE_ULTRALIGHT (tag);
 
     nfc_target_info_t pnti;
-    if (nfc_initiator_select_tag (tag->device, NM_ISO14443A_106, tag->info.abtUid, 8, &pnti)) {
+    if (nfc_initiator_select_tag (tag->device, NM_ISO14443A_106, tag->info.abtUid, tag->info.szUidLen, &pnti)) {
 	tag->active = 1;
 	for (int i = 0; i < MIFARE_ULTRALIGHT_PAGE_COUNT; i++)
 	    MIFARE_ULTRALIGHT(tag)->cached_pages[i] = 0;
@@ -182,27 +182,4 @@ mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, c
     MIFARE_ULTRALIGHT(tag)->cached_pages[page] = 0;
 
     return 0;
-}
-
-
-
-/*
- * Miscellaneous functions
- */
-char *
-mifare_ultralight_get_uid (MifareTag tag)
-{
-    char *uid = malloc (2 * 7 + 1);
-    MifareUltralightPage p0, p1;
-    mifare_ultralight_read (tag, 0, &p0);
-    mifare_ultralight_read (tag, 1, &p1);
-    sprintf (uid, "%02x%02x%02x%02x%02x%02x%02x",
-	    p0[0],
-	    p0[1],
-	    p0[2],
-	    p1[0],
-	    p1[1],
-	    p1[2],
-	    p1[3]);
-    return uid;
 }

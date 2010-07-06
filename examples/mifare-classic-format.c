@@ -21,10 +21,14 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <nfc/nfc.h>
 
 #include <freefare.h>
+
+#define START_FORMAT_N	"Formatting %d sectors ["
+#define DONE_FORMAT	"] done.\n"
 
 MifareClassicKey default_keys[] = {
     { 0xff,0xff,0xff,0xff,0xff,0xff },
@@ -38,70 +42,124 @@ MifareClassicKey default_keys[] = {
 };
 int		 format_mifare_classic_1k (MifareTag tag);
 int		 format_mifare_classic_4k (MifareTag tag);
-int		 try_format_sector (MifareTag tag, MifareClassicBlockNumber block);
+int		 try_format_sector (MifareTag tag, MifareClassicSectorNumber sector);
+
+static int at_block = 0;
+static int mod_block = 10;
+
+struct {
+    bool fast;
+    bool interactive;
+} format_options = {
+    .fast        = false,
+    .interactive = true
+};
+
+void
+display_progress ()
+{
+    at_block++;
+    if (0 == (at_block % mod_block)) {
+	printf ("%d", at_block);
+	fflush (stdout);
+    } else {
+	printf (".");
+	fflush (stdout);
+    }
+}
 
 int
 format_mifare_classic_1k (MifareTag tag)
 {
+    printf (START_FORMAT_N, 16);
     for (int sector = 0; sector < 16; sector++) {
-	if (!try_format_sector (tag, sector * 4))
+	if (!try_format_sector (tag, sector))
 	    return 0;
     }
+    printf (DONE_FORMAT);
     return 1;
 }
 
 int
 format_mifare_classic_4k (MifareTag tag)
 {
-    for (int sector = 0; sector < 32; sector++) {
-	if (!try_format_sector (tag, sector * 4))
+    printf (START_FORMAT_N, 32 + 8);
+    for (int sector = 0; sector < (32 + 8); sector++) {
+	if (!try_format_sector (tag, sector))
 	    return 0;
     }
-    for (int sector = 0; sector < 8; sector++) {
-	if (!try_format_sector (tag, 128 + sector * 16))
-	    return 0;
-    }
+    printf (DONE_FORMAT);
     return 1;
 }
 
 int
-try_format_sector (MifareTag tag, MifareClassicBlockNumber block)
+try_format_sector (MifareTag tag, MifareClassicSectorNumber sector)
 {
+    display_progress ();
     for (size_t i = 0; i < (sizeof (default_keys) / sizeof (MifareClassicKey)); i++) {
+	MifareClassicBlockNumber block = mifare_classic_sector_last_block (sector);
 	if ((0 == mifare_classic_connect (tag)) && (0 == mifare_classic_authenticate (tag, block, default_keys[i], MFC_KEY_A))) {
-	    if (0 == mifare_classic_format_sector (tag, block)) {
+	    if (0 == mifare_classic_format_sector (tag, sector)) {
 		mifare_classic_disconnect (tag);
 		return 1;
 	    } else if (EIO == errno) {
-		err (EXIT_FAILURE, "block %d", block);
+		err (EXIT_FAILURE, "sector %d", sector);
 	    }
 	    mifare_classic_disconnect (tag);
 	}
 
 	if ((0 == mifare_classic_connect (tag)) && (0 == mifare_classic_authenticate (tag, block, default_keys[i], MFC_KEY_B))) {
-	    if (0 == mifare_classic_format_sector (tag, block)) {
+	    if (0 == mifare_classic_format_sector (tag, sector)) {
 		mifare_classic_disconnect (tag);
 		return 1;
 	    } else if (EIO == errno) {
-		err (EXIT_FAILURE, "block %d", block);
+		err (EXIT_FAILURE, "sector %d", sector);
 	    }
 	    mifare_classic_disconnect (tag);
 	}
     }
 
-    warnx ("No known authentication key for block %d", block);
+    warnx ("No known authentication key for sector %d", sector);
     return 0;
+}
+
+void
+usage(char *progname)
+{
+    fprintf (stderr, "usage: %s [-fy]\n", progname);
+    fprintf (stderr, "\nOptions:\n");
+    fprintf (stderr, "  -f     Fast format (only erase MAD)\n");
+    fprintf (stderr, "  -y     Do not ask for confirmation (dangerous)\n");
 }
 
 int
 main(int argc, char *argv[])
 {
-    int error = EXIT_SUCCESS;
+    int ch;
+    int error = 0;
     nfc_device_t *device = NULL;
     MifareTag *tags = NULL;
 
-    if (argc > 1)
-	errx (EXIT_FAILURE, "usage: %s", argv[0]);
+    (void)argc, (void)argv;
+    while ((ch = getopt (argc, argv, "fhy")) != -1) {
+	switch (ch) {
+	    case 'f':
+		format_options.fast = true;
+		break;
+	    case 'h':
+		usage(argv[0]);
+		exit (EXIT_SUCCESS);
+		break;
+	    case 'y':
+		format_options.interactive = false;
+		break;
+	    default:
+		usage(argv[0]);
+		exit (EXIT_FAILURE);
+	}
+    }
+    argc -= optind;
+    argv += optind;
 
     device = nfc_connect (NULL);
     if (!device)
@@ -110,7 +168,7 @@ main(int argc, char *argv[])
     tags = freefare_get_tags (device);
     if (!tags) {
 	nfc_disconnect (device);
-	errx (EXIT_FAILURE, "Error listing tags.");
+	errx (EXIT_FAILURE, "Error listing MIFARE classic tag.");
     }
 
     for (int i = 0; (!error) && tags[i]; i++) {
@@ -122,20 +180,43 @@ main(int argc, char *argv[])
 		continue;
 	}
 
-	char *tag_uid = mifare_classic_get_uid (tags[i]);
+	char *tag_uid = freefare_get_tag_uid (tags[i]);
 	char buffer[BUFSIZ];
 
-	printf ("Found %s with UID %s.  Format [yN] ", freefare_get_tag_friendly_name (tags[i]), tag_uid);
-	fgets (buffer, BUFSIZ, stdin);
-	bool format = ((buffer[0] == 'y') || (buffer[0] == 'Y'));
+	printf ("Found %s with UID %s.", freefare_get_tag_friendly_name (tags[i]), tag_uid);
+	bool format = true;
+	if (format_options.interactive) {
+	    printf ("Format [yN] ");
+	    fgets (buffer, BUFSIZ, stdin);
+	    format = ((buffer[0] == 'y') || (buffer[0] == 'Y'));
+	} else {
+	    printf ("\n");
+	}
 
 	if (format) {
-	    switch (freefare_get_tag_type (tags[i])) {
+	    enum mifare_tag_type tt = freefare_get_tag_type (tags[i]);
+	    at_block = 0;
+
+	    if (format_options.fast) {
+		printf (START_FORMAT_N, (tt == CLASSIC_1K) ? 1 : 2);
+		if (!try_format_sector (tags[i], 0x00))
+		    break;
+
+		if (tt == CLASSIC_4K)
+		    if (!try_format_sector (tags[i], 0x10))
+			break;
+
+		printf (DONE_FORMAT);
+		continue;
+	    }
+	    switch (tt) {
 		case CLASSIC_1K:
+		    mod_block = 4;
 		    if (!format_mifare_classic_1k (tags[i]))
 			error = 1;
 		    break;
 		case CLASSIC_4K:
+		    mod_block = 10;
 		    if (!format_mifare_classic_4k (tags[i]))
 			error = 1;
 		    break;

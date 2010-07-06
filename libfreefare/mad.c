@@ -46,6 +46,8 @@
 #define SECTOR_0X00_AIDS 15
 #define SECTOR_0X10_AIDS 23
 
+#define MIN(a, b) ( (a < b) ? a : b )
+
 struct mad_sector_0x00 {
     uint8_t crc;
     uint8_t info;
@@ -65,7 +67,7 @@ struct mad {
 };
 
 /* Read key A */
-const MifareClassicKey mad_key_a = {
+const MifareClassicKey mad_public_key_a = {
     0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5
 };
 
@@ -148,7 +150,7 @@ mad_read (MifareTag tag)
 	goto error;
 
     /* Authenticate using MAD key A */
-    if (mifare_classic_authenticate (tag, 0x03, mad_key_a, MFC_KEY_A) < 0) {
+    if (mifare_classic_authenticate (tag, 0x03, mad_public_key_a, MFC_KEY_A) < 0) {
 	goto error;
     }
 
@@ -200,7 +202,7 @@ mad_read (MifareTag tag)
     if (mad->version == 2) {
 
 	/* Authenticate using MAD key A */
-	if (mifare_classic_authenticate (tag, 0x43, mad_key_a, MFC_KEY_A) < 0) {
+	if (mifare_classic_authenticate (tag, 0x43, mad_public_key_a, MFC_KEY_A) < 0) {
 	    goto error;
 	}
 
@@ -286,27 +288,27 @@ mad_write (MifareTag tag, Mad mad, MifareClassicKey key_b_sector_00, MifareClass
 
 	mad->sector_0x10.crc = sector_0x10_crc8 (mad);
 
-	memcpy (data, &(mad->sector_0x10), sizeof (data));
+	memcpy (data, (uint8_t *)&(mad->sector_0x10), sizeof (data));
 	if (mifare_classic_write (tag, 0x40, data) < 0) return -1;
-	memcpy (data, &(mad->sector_0x10) + sizeof (data), sizeof (data));
+	memcpy (data, (uint8_t *)&(mad->sector_0x10) + sizeof (data), sizeof (data));
 	if (mifare_classic_write (tag, 0x41, data) < 0) return -1;
-	memcpy (data, &(mad->sector_0x10) + sizeof (data) * 2, sizeof (data));
+	memcpy (data, (uint8_t *)&(mad->sector_0x10) + sizeof (data) * 2, sizeof (data));
 	if (mifare_classic_write (tag, 0x42, data) < 0) return -1;
 
-	mifare_classic_trailer_block (&data, mad_key_a, 0x0, 0x1, 0x1, 0x6, 0x00, key_b_sector_10);
-	if (mifare_classic_write (tag, 0x42, data) < 0) return -1;
+	mifare_classic_trailer_block (&data, mad_public_key_a, 0x0, 0x1, 0x1, 0x6, 0x00, key_b_sector_10);
+	if (mifare_classic_write (tag, 0x43, data) < 0) return -1;
 
     }
 
     mad->sector_0x00.crc = sector_0x00_crc8 (mad);
 
     if (mifare_classic_authenticate (tag, 0x00, key_b_sector_00, MFC_KEY_B) < 0) return -1;
-    memcpy (data, &(mad->sector_0x00), sizeof (data));
+    memcpy (data, (uint8_t *)&(mad->sector_0x00), sizeof (data));
     if (mifare_classic_write (tag, 0x01, data) < 0) return -1;
-    memcpy (data, &(mad->sector_0x00) + sizeof (data), sizeof (data));
+    memcpy (data, (uint8_t *)&(mad->sector_0x00) + sizeof (data), sizeof (data));
     if (mifare_classic_write (tag, 0x02, data) < 0) return -1;
 
-    mifare_classic_trailer_block (&data, mad_key_a, 0x0, 0x1, 0x1, 0x6, gpb, key_b_sector_00);
+    mifare_classic_trailer_block (&data, mad_public_key_a, 0x0, 0x1, 0x1, 0x6, gpb, key_b_sector_00);
     if (mifare_classic_write (tag, 0x03, data) < 0) return -1;
 
     return 0;
@@ -337,7 +339,7 @@ mad_set_version (Mad mad, uint8_t version)
 /*
  * Return the MAD card publisher sector.
  */
-MifareSectorNumber
+MifareClassicSectorNumber
 mad_get_card_publisher_sector(Mad mad)
 {
     return (mad->sector_0x00.info & 0x3f);
@@ -347,7 +349,7 @@ mad_get_card_publisher_sector(Mad mad)
  * Set the MAD card publisher sector.
  */
 int
-mad_set_card_publisher_sector(Mad mad, MifareSectorNumber cps)
+mad_set_card_publisher_sector(Mad mad, MifareClassicSectorNumber cps)
 {
     if (((mad->version == 2) && (cps > 0x27)) | (mad->version == 1) && (cps > 0x0f)) {
 	errno = EINVAL;
@@ -362,7 +364,7 @@ mad_set_card_publisher_sector(Mad mad, MifareSectorNumber cps)
  * Get the provided sector's application identifier.
  */
 int
-mad_get_aid(Mad mad, MifareSectorNumber sector, MadAid *aid)
+mad_get_aid(Mad mad, MifareClassicSectorNumber sector, MadAid *aid)
 {
     if ((sector < 1) || (sector == 0x10) || (sector > 0x27)) {
 	errno = EINVAL;
@@ -389,9 +391,9 @@ mad_get_aid(Mad mad, MifareSectorNumber sector, MadAid *aid)
  * Set the provided sector's application identifier.
  */
 int
-mad_set_aid(Mad mad, MifareSectorNumber sector, MadAid aid)
+mad_set_aid(Mad mad, MifareClassicSectorNumber sector, MadAid aid)
 {
-    if (sector > 0x27) {
+    if ((sector < 1) || (sector == 0x10) || (sector > 0x27)) {
 	errno = EINVAL;
 	return -1;
     }
@@ -401,14 +403,20 @@ mad_set_aid(Mad mad, MifareSectorNumber sector, MadAid aid)
 	    errno = EINVAL;
 	    return -1;
 	}
-	mad->sector_0x00.aids[sector - 0x0f - 1].function_cluster_code = aid.function_cluster_code;
-	mad->sector_0x00.aids[sector - 0x0f - 1].application_code      = aid.application_code;
+	mad->sector_0x10.aids[sector - 0x0f - 2].function_cluster_code = aid.function_cluster_code;
+	mad->sector_0x10.aids[sector - 0x0f - 2].application_code      = aid.application_code;
     } else {
 	mad->sector_0x00.aids[sector - 1].function_cluster_code = aid.function_cluster_code;
 	mad->sector_0x00.aids[sector - 1].application_code      = aid.application_code;
     }
 
     return 0;
+}
+
+bool
+mad_sector_reserved (MifareClassicSectorNumber sector)
+{
+    return ((0x00 == sector) || (0x10 == sector));
 }
 
 /*
@@ -418,4 +426,102 @@ void
 mad_free (Mad mad)
 {
     free (mad);
+}
+
+ssize_t
+mad_application_read (MifareTag tag, Mad mad, MadAid aid, void *buf, size_t nbytes, MifareClassicKey key, MifareClassicKeyType key_type)
+{
+    ssize_t res = 0;
+
+    MifareClassicSectorNumber *sectors = mifare_application_find (mad, aid);
+    MifareClassicSectorNumber *s = sectors;
+
+    if (!sectors)
+	return errno = EBADF, -1;
+
+    while (*s && nbytes && (res >= 0)) {
+	MifareClassicBlockNumber first_block = mifare_classic_sector_first_block (*s);
+	MifareClassicBlockNumber last_block  = mifare_classic_sector_last_block (*s);
+
+	MifareClassicBlockNumber b = first_block;
+	MifareClassicBlock block;
+
+	if (mifare_classic_authenticate (tag, first_block, key, key_type) < 0) {
+	    res = -1;
+	    break;
+	}
+
+	while ((b < last_block) && nbytes) {
+	    size_t n = MIN (nbytes, 16);
+
+	    if (mifare_classic_read (tag, b, &block) < 0) {
+		res = -1;
+		break;
+	    }
+	    memcpy ((uint8_t *)buf + res, &block, n);
+
+	    nbytes -= n;
+	    res += n;
+
+	    b++;
+	}
+
+	s++;
+    }
+
+    free (sectors);
+    return res;
+}
+
+ssize_t
+mad_application_write (MifareTag tag, Mad mad, MadAid aid, const void *buf, size_t nbytes, MifareClassicKey key, MifareClassicKeyType key_type)
+{
+    ssize_t res = 0;
+
+    MifareClassicSectorNumber *sectors = mifare_application_find (mad, aid);
+    MifareClassicSectorNumber *s = sectors;
+
+    if (!sectors)
+	return errno = EBADF, -1;
+
+    while (*s && nbytes && (res >= 0)) {
+	MifareClassicBlockNumber first_block = mifare_classic_sector_first_block (*s);
+	MifareClassicBlockNumber last_block  = mifare_classic_sector_last_block (*s);
+
+	MifareClassicBlockNumber b = first_block;
+	MifareClassicBlock block;
+
+	if (mifare_classic_authenticate (tag, first_block, key, key_type) < 0) {
+	    res = -1;
+	    break;
+	}
+
+	while ((b < last_block) && nbytes) {
+	    size_t n = MIN (nbytes, 16);
+	    // Avoid overwriting existing data with uninitialized memory.
+	    if (n < 16) {
+		if (mifare_classic_read (tag, b, &block) < 0) {
+		    res = -1;
+		    break;
+		}
+	    }
+
+	    memcpy (&block, (uint8_t *)buf + res, n);
+	    if (mifare_classic_write (tag, b, block) < 0) {
+		res = -1;
+		break;
+	    }
+
+	    nbytes -= n;
+	    res += n;
+
+	    b++;
+	}
+
+	s++;
+    }
+
+    free (sectors);
+    return res;
+
 }

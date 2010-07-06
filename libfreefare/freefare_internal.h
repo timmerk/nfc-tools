@@ -22,6 +22,10 @@
 
 #include "config.h"
 
+#if !defined(le32toh) && defined(letoh32)
+#  define le32toh(x) letoh32(x)
+#endif
+
 #if defined(HAVE_BYTESWAP_H)
 #include <byteswap.h>
 #if !defined(le32toh) || !defined(htole32)
@@ -49,8 +53,6 @@ MifareTag	 mifare_ultralight_tag_new (void);
 void		 mifare_ultralight_tag_free (MifareTag tag);
 uint8_t		 sector_0x00_crc8 (Mad mad);
 uint8_t		 sector_0x10_crc8 (Mad mad);
-MifareClassicBlockNumber  mifare_classic_first_sector_block (MifareClassicBlockNumber block);
-MifareClassicBlockNumber  mifare_classic_last_sector_block (MifareClassicBlockNumber block);
 
 typedef enum {
     MD_SEND,

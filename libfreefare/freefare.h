@@ -54,6 +54,8 @@ typedef unsigned char MifareUltralightPage[4];
 MifareTag	*freefare_get_tags (nfc_device_t *device);
 enum mifare_tag_type freefare_get_tag_type (MifareTag tag);
 const char	*freefare_get_tag_friendly_name (MifareTag tag);
+char		*freefare_get_tag_uid (MifareTag tag);
+void		 freefare_free_tag (MifareTag tag);
 void		 freefare_free_tags (MifareTag *tags);
 
 int		 mifare_ultralight_connect (MifareTag tag);
@@ -62,11 +64,9 @@ int		 mifare_ultralight_disconnect (MifareTag tag);
 int		 mifare_ultralight_read (MifareTag tag, const MifareUltralightPageNumber page, MifareUltralightPage *data);
 int		 mifare_ultralight_write (MifareTag tag, const MifareUltralightPageNumber page, const MifareUltralightPage data);
 
-char		*mifare_ultralight_get_uid (MifareTag tag);
-
 typedef unsigned char MifareClassicBlock[16];
 
-typedef uint8_t MifareSectorNumber;
+typedef uint8_t MifareClassicSectorNumber;
 typedef unsigned char MifareClassicBlockNumber;
 
 typedef enum { MFC_KEY_A, MFC_KEY_B } MifareClassicKeyType;
@@ -89,10 +89,14 @@ int		 mifare_classic_transfer (MifareTag tag, const MifareClassicBlockNumber blo
 int 		 mifare_classic_get_trailer_block_permission (MifareTag tag, const MifareClassicBlockNumber block, const uint16_t permission, const MifareClassicKeyType key_type);
 int		 mifare_classic_get_data_block_permission (MifareTag tag, const MifareClassicBlockNumber block, const unsigned char permission, const MifareClassicKeyType key_type);
 
-int		 mifare_classic_format_sector (MifareTag tag, const MifareClassicBlockNumber block);
-char		*mifare_classic_get_uid (MifareTag tag);
+int		 mifare_classic_format_sector (MifareTag tag, const MifareClassicSectorNumber sector);
 
 void		 mifare_classic_trailer_block (MifareClassicBlock *block, const MifareClassicKey key_a, uint8_t ab_0, uint8_t ab_1, uint8_t ab_2, uint8_t ab_tb, const uint8_t gpb, const MifareClassicKey key_b);
+
+MifareClassicSectorNumber mifare_classic_block_sector (MifareClassicBlockNumber block);
+MifareClassicBlockNumber  mifare_classic_sector_first_block (MifareClassicSectorNumber sector);
+size_t		 mifare_classic_sector_block_count (MifareClassicSectorNumber sector);
+MifareClassicBlockNumber  mifare_classic_sector_last_block (MifareClassicSectorNumber sector);
 
 #define C_000 0
 #define C_001 1
@@ -126,21 +130,27 @@ typedef struct mad_aid MadAid;
 struct mad;
 typedef struct mad *Mad;
 
+/* MAD Public read key A */
+extern const MifareClassicKey mad_public_key_a;
+
 Mad		 mad_new (uint8_t version);
 Mad		 mad_read (MifareTag tag);
 int		 mad_write (MifareTag tag, Mad mad, MifareClassicKey key_b_sector_00, MifareClassicKey key_b_sector_10);
 int		 mad_get_version (Mad mad);
 void		 mad_set_version (Mad mad, uint8_t version);
-MifareSectorNumber mad_get_card_publisher_sector (Mad mad);
-int		 mad_set_card_publisher_sector (Mad mad, MifareSectorNumber cps);
-int		 mad_get_aid (Mad mad, MifareSectorNumber sector, MadAid *aid);
-int		 mad_set_aid (Mad mad, MifareSectorNumber sector, MadAid aid);
+MifareClassicSectorNumber mad_get_card_publisher_sector (Mad mad);
+int		 mad_set_card_publisher_sector (Mad mad, MifareClassicSectorNumber cps);
+int		 mad_get_aid (Mad mad, MifareClassicSectorNumber sector, MadAid *aid);
+int		 mad_set_aid (Mad mad, MifareClassicSectorNumber sector, MadAid aid);
+bool		 mad_sector_reserved (MifareClassicSectorNumber sector);
 void		 mad_free (Mad mad);
+ssize_t		 mad_application_read (MifareTag tag, Mad mad, MadAid aid, void *buf, size_t nbytes, MifareClassicKey key, MifareClassicKeyType key_type);
+ssize_t		 mad_application_write (MifareTag tag, Mad mad, MadAid aid, const void *buf, size_t nbytes, MifareClassicKey key, MifareClassicKeyType key_type);
 
-MifareSectorNumber *mifare_application_alloc (Mad mad, MadAid aid, size_t size);
+MifareClassicSectorNumber *mifare_application_alloc (Mad mad, MadAid aid, size_t size);
 void		 mifare_application_free (Mad mad, MadAid aid);
 
-MifareSectorNumber *mifare_application_find (Mad mad, MadAid aid);
+MifareClassicSectorNumber *mifare_application_find (Mad mad, MadAid aid);
 
 /* File types */
 
@@ -302,6 +312,10 @@ void		 mifare_desfire_key_set_version (MifareDESFireKey key, uint8_t version);
 void		 mifare_desfire_key_free (MifareDESFireKey key);
 
 const char	*desfire_error_lookup (uint8_t error);
+
+uint8_t		*tlv_encode (const uint8_t type, const uint8_t *istream, uint16_t isize, size_t *osize);
+uint8_t		*tlv_decode (const uint8_t *istream, uint8_t *type, uint16_t *size);
+uint8_t		*tlv_append (uint8_t *a, uint8_t *b);
 
 #ifdef __cplusplus
     }

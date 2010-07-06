@@ -1,4 +1,4 @@
-AC_INIT([libfreefare], [0.0.0])
+AC_INIT([libfreefare], [0.1.0])
 
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -28,7 +28,9 @@ AC_TYPE_SSIZE_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_CHECK_FUNCS([memset pow strerror])
+
+AC_CHECK_HEADERS([sys/types.h])
+AC_CHECK_FUNCS([memset letoh32 htole32 pow strerror])
 
 AC_CHECK_HEADERS([endian.h sys/endian.h])
 if test $ac_cv_header_endian_h = "no" -a $ac_cv_header_sys_endian_h = "no"; then
@@ -38,6 +40,7 @@ fi
 AC_CHECK_HEADERS([byteswap.h])
 
 AC_DEFINE([_XOPEN_SOURCE], [600], [Define to 500 if Single Unix conformance is wanted, 600 for sixth revision.])
+AC_DEFINE([_BSD_SOURCE], [1], [Define on BSD to activate all library features])
 
 CFLAGS="$CFLAGS -std=c99"
 
@@ -46,12 +49,17 @@ AC_CHECK_LIB([ssl], [DES_ecb_encrypt], [], [AC_MSG_ERROR([Cannot find libssl.])]
 AC_CHECK_HEADER([openssl/des.h], [], [AC_MSG_ERROR([Cannot find libssl headers.])])
 
 # Checks for pkg-config modules.
-PKG_CHECK_MODULES([LIBNFC], [libnfc], [], [AC_MSG_ERROR([libnfc is mandatory.])])
+LIBNFC_REQUIRED_VERSION=1.3.4
+PKG_CHECK_MODULES([LIBNFC], [libnfc >= $LIBNFC_REQUIRED_VERSION], [], [AC_MSG_ERROR([libnfc >= $LIBNFC_REQUIRED_VERSION is mandatory.])])
 
 PKG_CONFIG_REQUIRES="libnfc"
 AC_SUBST([PKG_CONFIG_REQUIRES])
 
-m4_ifdef([AC_CHECK_CUTTER], [AC_CHECK_CUTTER], [ac_cv_use_cutter="no"])
+CUTTER_REQUIRED_VERSION=1.1.2
+m4_ifdef([AC_CHECK_CUTTER], [AC_CHECK_CUTTER([>= $CUTTER_REQUIRED_VERSION])], [ac_cv_use_cutter="no"])
+if test x$ac_cv_with_cutter = xyes -a x$ac_cv_use_cutter = xno; then
+    AC_MSG_ERROR([cutter >= $CUTTER_REQUIRED_VERSION is mandatory.])
+fi
 AM_CONDITIONAL([WITH_CUTTER], [test "$ac_cv_use_cutter" != "no"])
 
 m4_ifdef([AC_CHECK_COVERAGE], [AC_CHECK_COVERAGE])
