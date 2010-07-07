@@ -179,8 +179,8 @@ test_mifare_desfire (void)
     size_t aid_count;
     res = mifare_desfire_get_application_ids (tag, &aids, &aid_count);
     cut_assert_success ("mifare_desfire_get_application_ids()");
-
     cut_assert_equal_int (3, aid_count, cut_message ("Wrong application count"));
+    mifare_desfire_free_application_ids (aids);
 
     res = mifare_desfire_select_application (tag, aid_a);
     cut_assert_success ("mifare_desfire_select_application()");
@@ -344,6 +344,7 @@ test_mifare_desfire (void)
     res = mifare_desfire_get_application_ids (tag, &aids, &aid_count);
     cut_assert_success ("mifare_desfire_get_application_ids()");
     cut_assert_equal_int (2, aid_count, cut_message ("Wrong application count"));
+    mifare_desfire_free_application_ids (aids);
 
     res = mifare_desfire_select_application (tag, aid_b);
     cut_assert_success ("mifare_desfire_select_application()");
@@ -446,6 +447,7 @@ test_mifare_desfire (void)
     res = mifare_desfire_get_application_ids (tag, &aids, &aid_count);
     cut_assert_success ("mifare_desfire_get_application_ids()");
     cut_assert_equal_int (1, aid_count, cut_message ("Wrong AID count"));
+    mifare_desfire_free_application_ids (aids);
 
     /* Tests using application C */
 
@@ -522,6 +524,7 @@ test_mifare_desfire (void)
     res = mifare_desfire_get_application_ids (tag, &aids, &aid_count);
     cut_assert_success ("mifare_desfire_get_application_ids()");
     cut_assert_equal_int (1, aid_count, cut_message ("Wrong AID count"));
+    mifare_desfire_free_application_ids (aids);
 
     /* Deleting an application should be possible again */
     res = mifare_desfire_delete_application (tag, aid_c);
