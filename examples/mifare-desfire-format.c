@@ -17,6 +17,8 @@
  * $Id: mifare-classic-format.c 189 2010-03-01 14:04:47Z romain.tartiere $
  */
 
+#include "config.h"
+
 #include <err.h>
 #include <errno.h>
 #include <stdlib.h>
