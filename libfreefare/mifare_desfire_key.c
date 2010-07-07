@@ -64,9 +64,9 @@ mifare_desfire_3des_key_new (uint8_t value[16])
     uint8_t data[16];
     memcpy (data, value, 16);
     for (int n=0; n < 8; n++)
-	data[n] |= 0x01;
-    for (int n=8; n < 16; n++)
 	data[n] &= 0xfe;
+    for (int n=8; n < 16; n++)
+	data[n] |= 0x01;
     return mifare_desfire_3des_key_new_with_version (data);
 }
 
@@ -87,13 +87,9 @@ uint8_t
 mifare_desfire_key_get_version (MifareDESFireKey key)
 {
     uint8_t version = 0;
-    int base = 0;
-
-    if (key->type == T_3DES)
-	base = 8;
 
     for (int n = 0; n < 8; n++) {
-	version |= ((key->data[n + base] & 1) << (7 - n));
+	version |= ((key->data[n] & 1) << (7 - n));
     }
 
     return version;
@@ -104,14 +100,14 @@ mifare_desfire_key_set_version (MifareDESFireKey key, uint8_t version)
 {
     for (int n = 0; n < 8; n++) {
 	uint8_t version_bit = ((version & (1 << (7-n))) >> (7-n));
-	key->data[8+n] &= 0xfe;
-	key->data[8+n] |= version_bit;
+	key->data[n] &= 0xfe;
+	key->data[n] |= version_bit;
 	if (key->type == T_DES) {
-	    key->data[n] = key->data[8+n];
+	    key->data[n+8] = key->data[n];
 	} else {
 	    // Write ~version to avoid turning a 3DES key into a DES key
-	    key->data[n] &= 0xfe;
-	    key->data[n] |= ~version_bit;
+	    key->data[n+8] &= 0xfe;
+	    key->data[n+8] |= ~version_bit;
 	}
     }
 }
