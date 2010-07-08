@@ -70,8 +70,8 @@ struct mifare_desfire_raw_file_settings {
 };
 #pragma pack (pop)
 
-static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
-static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
+static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
+static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
 static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data);
 static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf);
 
@@ -703,7 +703,7 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
 
     settings->file_type = raw_settings.file_type;
     settings->communication_settings = raw_settings.communication_settings;
-    settings->access_rights = raw_settings.access_rights;
+    settings->access_rights = le16toh (raw_settings.access_rights);
     
     switch (settings->file_type) {
 	case MDFT_STANDARD_DATA_FILE:
@@ -728,26 +728,53 @@ mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_
 }
 
 int
-mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right)
+mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
+    // TODO: Use a current application files settings cache.
+    struct mifare_desfire_file_settings settings;
+    int res = mifare_desfire_get_file_settings (tag, file_no, &settings);
+    if (res < 0)
+	return res;
+
+    if (MDAR_CHANGE_AR(settings.access_rights) == MDAR_FREE) {
     BUFFER_INIT (cmd, 5);
     BUFFER_INIT (res, 1);
 
     BUFFER_APPEND (cmd, 0x5F);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, access_rights, 2, sizeof (uint16_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
+    } else {
+	BUFFER_INIT (cmd, 10);
+	BUFFER_INIT (res, 1);
+
+	uint8_t data[8];
+
+	BUFFER_APPEND (cmd, 0x5F);
+	BUFFER_APPEND (cmd, file_no);
+
+	data[0] = communication_settings;
+	uint16_t le_ar = htole16 (access_rights);
+	memcpy (data + 1, &le_ar, sizeof (le_ar));
+	iso14443a_crc (data, 3, data+3);
+	bzero (data + 5, 3);
+	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND);
+
+	BUFFER_APPEND_BYTES (cmd, data, 8);
+
+	DESFIRE_TRANSCEIVE (tag, cmd, res);
+    }
 
     return 0;
 }
 
 static int
-create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size)
+create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -758,7 +785,7 @@ create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communica
     BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, access_rights, 2, sizeof (uint16_t));
     BUFFER_APPEND_LE (cmd, file_size, 3, sizeof (uint32_t));
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
@@ -767,19 +794,19 @@ create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communica
 }
 
 int
-mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size)
+mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
 {
-    return create_file1 (tag, 0xCD, file_no, communication_settings, access_right, file_size);
+    return create_file1 (tag, 0xCD, file_no, communication_settings, access_rights, file_size);
 }
 
 int
-mifare_desfire_create_backup_data_file  (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size)
+mifare_desfire_create_backup_data_file  (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size)
 {
-    return create_file1 (tag, 0xCB, file_no, communication_settings, access_right, file_size);
+    return create_file1 (tag, 0xCB, file_no, communication_settings, access_rights, file_size);
 }
 
 int
-mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable)
+mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -790,7 +817,7 @@ mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t commun
     BUFFER_APPEND (cmd, 0xCC);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, access_rights, 2, sizeof (uint16_t));
     BUFFER_APPEND_LE (cmd, lower_limit, 4, sizeof (int32_t));
     BUFFER_APPEND_LE (cmd, upper_limit, 4, sizeof (int32_t));
     BUFFER_APPEND_LE (cmd, value, 4, sizeof (int32_t));
@@ -802,7 +829,7 @@ mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t commun
 }
 
 static int
-create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records)
+create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
 {
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -813,7 +840,7 @@ create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communica
     BUFFER_APPEND (cmd, command);
     BUFFER_APPEND (cmd, file_no);
     BUFFER_APPEND (cmd, communication_settings);
-    BUFFER_APPEND_LE (cmd, access_right, 2, sizeof (uint16_t));
+    BUFFER_APPEND_LE (cmd, access_rights, 2, sizeof (uint16_t));
     BUFFER_APPEND_LE (cmd, record_size, 3, sizeof (uint32_t));
     BUFFER_APPEND_LE (cmd, max_number_of_records, 3, sizeof (uint32_t));
 
@@ -823,15 +850,15 @@ create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communica
 }
 
 int
-mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records)
+mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
 {
-    return create_file2 (tag, 0xC1, file_no, communication_settings, access_right, record_size, max_number_of_records);
+    return create_file2 (tag, 0xC1, file_no, communication_settings, access_rights, record_size, max_number_of_records);
 }
 
 int
-mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records)
+mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records)
 {
-    return create_file2 (tag, 0xC0, file_no, communication_settings, access_right, record_size, max_number_of_records);
+    return create_file2 (tag, 0xC0, file_no, communication_settings, access_rights, record_size, max_number_of_records);
 }
 
 int
