@@ -66,5 +66,6 @@ echo-cutter:
 	@echo $(CUTTER)
 
 EXTRA_DIST = run-test.sh
+CLEANFILES = *.gcno
 
 endif

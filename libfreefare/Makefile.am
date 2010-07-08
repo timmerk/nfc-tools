@@ -85,3 +85,4 @@ uninstall-hook:
 	(cd $(DESTDIR)$(man3dir); for i in `echo $(linkedman) | xargs -n2 echo | awk '{print $$2}'`; do rm -f $$i; done;)
 
 EXTRA_DIST = freefare_internal.h $(man_MANS)
+CLEANFILES = *.gcno
