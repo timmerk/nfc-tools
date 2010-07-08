@@ -932,6 +932,8 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
     size_t bytes_left;
     size_t bytes_send = 0;
 
+    void *p = data;
+
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
@@ -943,12 +945,56 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
     BUFFER_APPEND_LE (cmd, offset, 3, sizeof (off_t));
     BUFFER_APPEND_LE (cmd, length, 3, sizeof (size_t));
 
+    // FIXME: It might be forbiden to get file settings.
+    struct mifare_desfire_file_settings settings;
+    if (mifare_desfire_get_file_settings (tag, file_no, &settings))
+	return -1;
+
+    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_WRITE (settings.access_rights)) ||
+	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
+	size_t enciphered_length;
+	printf ("Crypto needed, badly!\n");
+	switch (settings.communication_settings) {
+	    case 0: /* Plain communication */
+		break;
+	    case 1: /* MACing secured communication */
+		return errno = ENOTSUP, -1;
+		break;
+	    case 3: /* DES/3DES enciphered communication */
+		/*
+		 * Setup a new buffer for the data to send featuring:
+		 *   - the actual data to send (length bytes);
+		 *   - the data CRC (2 bytes);
+		 *   - \0 padding to align on 8 bytes blocks.
+		 */
+		if ((length + 2) % 8) {
+		    enciphered_length = (((length + 2) / 8) + 1) * 8;
+		} else {
+		    enciphered_length = length + 2;
+		}
+
+		if (!(p = malloc (enciphered_length)))
+		    return -1;
+
+		memcpy (p, data, length);
+		iso14443a_crc (p, length, (uint8_t *)p + length);
+		bzero ((uint8_t *)p + length + 2, enciphered_length - (length + 2));
+		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, enciphered_length, MD_SEND);
+		length = enciphered_length;
+		break;
+	    default: 
+		return errno = ENOTSUP, -1;
+		break;
+	}
+    }
+
+
     bytes_left = 52;
 
     while (bytes_send < length) {
 	size_t frame_bytes = MIN(bytes_left, length - bytes_send);
 
-	BUFFER_APPEND_BYTES (cmd, (uint8_t *)data + bytes_send, frame_bytes);
+	BUFFER_APPEND_BYTES (cmd, (uint8_t *)p + bytes_send, frame_bytes);
 
 	DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -962,6 +1008,9 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 	BUFFER_APPEND (cmd, 0xAF);
 	bytes_left = 0x59;
     }
+
+    if (p != data)
+	free (p);
 
     // Only 0xAF (additionnal Frame) failure can happen here.
     return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1;
