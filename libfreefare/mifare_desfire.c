@@ -946,7 +946,7 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
     bytes_left = 52;
 
     while (bytes_send < length) {
-	size_t frame_bytes = (bytes_left < length) ? bytes_left : length;
+	size_t frame_bytes = MIN(bytes_left, length - bytes_send);
 
 	BUFFER_APPEND_BYTES (cmd, (uint8_t *)data + bytes_send, frame_bytes);
 

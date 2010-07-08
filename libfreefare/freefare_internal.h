@@ -41,6 +41,9 @@
 
 #include <openssl/des.h>
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
 struct mad_sector_0x00;
 struct mad_sector_0x10;
 

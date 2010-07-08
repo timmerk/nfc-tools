@@ -47,8 +47,6 @@
 #define SECTOR_0X00_AIDS 15
 #define SECTOR_0X10_AIDS 23
 
-#define MIN(a, b) ( (a < b) ? a : b )
-
 struct mad_sector_0x00 {
     uint8_t crc;
     uint8_t info;
