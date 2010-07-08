@@ -17,3 +17,5 @@ mifare_desfire_format_LDADD = -lnfc $(top_builddir)/libfreefare/libfreefare.la -
 
 mifare_desfire_info_SOURCES = mifare-desfire-info.c
 mifare_desfire_info_LDADD = -lnfc $(top_builddir)/libfreefare/libfreefare.la -lssl -lm
+
+CLEANFILES=	*.gcno
