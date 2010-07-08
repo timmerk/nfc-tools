@@ -954,12 +954,17 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 
 	bytes_send += frame_bytes;
 
+	if (0x00 == res[0])
+	    return bytes_send;
+
+	// PICC returned 0xAF and expects more data
 	BUFFER_CLEAR (cmd);
 	BUFFER_APPEND (cmd, 0xAF);
 	bytes_left = 0x59;
     }
 
-    return bytes_send;
+    // Only 0xAF (additionnal Frame) failure can happen here.
+    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1;
 }
 
 ssize_t
