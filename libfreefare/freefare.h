@@ -170,13 +170,33 @@ enum mifare_desfire_file_types {
 
 /* Access right */
 
-#define MDAR_READ(ar)       (ar << 12)
-#define MDAR_WRITE(ar)      (ar << 8)
-#define MDAR_READ_WRITE(ar) (ar << 4)
-#define MDAR_CHANGE_AR(ar)  (ar)
+#define MDAR(read,write,read_write,change_access_rights) ( \
+	(read << 12) | \
+	(write << 8) | \
+	(read_write << 4) | \
+	(change_access_rights) \
+	)
+#define MDAR_READ(ar)       (((ar) >> 12) & 0x0f)
+#define MDAR_WRITE(ar)      (((ar) >>  8) & 0x0f)
+#define MDAR_READ_WRITE(ar) (((ar) >>  4) & 0x0f)
+#define MDAR_CHANGE_AR(ar)  ((ar)         & 0x0f)
 
-#define MDAR_FREE 0xE
-#define MDAR_DENY 0xF
+#define MDAD_KEY0  0x0
+#define MDAD_KEY1  0x1
+#define MDAD_KEY2  0x2
+#define MDAD_KEY3  0x3
+#define MDAD_KEY4  0x4
+#define MDAD_KEY5  0x5
+#define MDAD_KEY6  0x6
+#define MDAD_KEY7  0x7
+#define MDAD_KEY8  0x8
+#define MDAD_KEY9  0x9
+#define MDAD_KEY10 0xa
+#define MDAD_KEY11 0xb
+#define MDAD_KEY12 0xc
+#define MDAD_KEY13 0xd
+#define MDAR_FREE  0xE
+#define MDAR_DENY  0xF
 
 /* Status and error codes */
 
@@ -281,12 +301,12 @@ int		 mifare_desfire_format_picc (MifareTag tag);
 int		 mifare_desfire_get_version (MifareTag tag, struct mifare_desfire_version_info *version_info);
 int		 mifare_desfire_get_file_ids (MifareTag tag, uint8_t *files[], size_t *count);
 int		 mifare_desfire_get_file_settings (MifareTag tag, uint8_t file_no, struct mifare_desfire_file_settings *settings);
-int		 mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right);
-int		 mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
-int		 mifare_desfire_create_backup_data_file  (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t file_size);
-int		 mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable);
-int		 mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
-int		 mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_right, uint32_t record_size, uint32_t max_number_of_records);
+int		 mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights);
+int		 mifare_desfire_create_std_data_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
+int		 mifare_desfire_create_backup_data_file  (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
+int		 mifare_desfire_create_value_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, int32_t lower_limit, int32_t upper_limit, int32_t value, uint8_t limited_credit_enable);
+int		 mifare_desfire_create_linear_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
+int		 mifare_desfire_create_cyclic_record_file (MifareTag tag, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
 int		 mifare_desfire_delete_file (MifareTag tag, uint8_t file_no);
 
 ssize_t		 mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf);
