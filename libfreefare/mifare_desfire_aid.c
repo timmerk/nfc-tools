@@ -31,12 +31,6 @@ mifare_desfire_aid_new (uint8_t application_code, uint8_t function_cluster_code,
 }
 
 MifareDESFireAID
-mifare_desfire_card_level_aid_new (void)
-{
-    return calloc (1, sizeof (struct mifare_desfire_aid));
-}
-
-MifareDESFireAID
 mifare_desfire_aid_new_with_mad_aid (MadAid mad_aid, uint8_t n)
 {
 
