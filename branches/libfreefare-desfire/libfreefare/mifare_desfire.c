@@ -331,7 +331,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t PICC_RndB[8];
     memcpy (PICC_RndB, PICC_E_RndB, 8);
-    mifare_cbc_des (key, PICC_RndB, 8, MD_RECEIVE);
+    mifare_cbc_des (key, PICC_RndB, 8, MD_RECEIVE, 0);
 
     uint8_t PCD_RndA[8];
     DES_random_key ((DES_cblock*)&PCD_RndA);
@@ -344,7 +344,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
     memcpy (token, PCD_RndA, 8);
     memcpy (token+8, PCD_r_RndB, 8);
 
-    mifare_cbc_des (key, token, 16, MD_SEND);
+    mifare_cbc_des (key, token, 16, MD_SEND, 0);
 
     BUFFER_INIT (cmd2, 17);
 
@@ -358,7 +358,7 @@ mifare_desfire_authenticate (MifareTag tag, uint8_t key_no, MifareDESFireKey key
 
     uint8_t PICC_RndA_s[8];
     memcpy (PICC_RndA_s, PICC_E_RndA_s, 8);
-    mifare_cbc_des (key, PICC_RndA_s, 8, MD_RECEIVE);
+    mifare_cbc_des (key, PICC_RndA_s, 8, MD_RECEIVE, 0);
 
     uint8_t PCD_RndA_s[8];
     memcpy (PCD_RndA_s, PCD_RndA, 8);
@@ -393,7 +393,7 @@ mifare_desfire_change_key_settings (MifareTag tag, uint8_t settings)
     iso14443a_crc (data, 1, data + 1);
     bzero (data+3, 5);
 
-    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND);
+    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND, 0);
 
     BUFFER_APPEND_BYTES (cmd, data, 8);
 
@@ -466,7 +466,7 @@ mifare_desfire_change_key (MifareTag tag, uint8_t key_no, MifareDESFireKey new_k
 	}
     }
 
-    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 24, MD_SEND);
+    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 24, MD_SEND, 0);
 
     BUFFER_APPEND_BYTES (cmd, data, 24);
 
@@ -763,7 +763,7 @@ mifare_desfire_change_file_settings (MifareTag tag, uint8_t file_no, uint8_t com
 	memcpy (data + 1, &le_ar, sizeof (le_ar));
 	iso14443a_crc (data, 3, data+3);
 	bzero (data + 5, 3);
-	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND);
+	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, data, 8, MD_SEND, 0);
 
 	BUFFER_APPEND_BYTES (cmd, data, 8);
 
@@ -964,7 +964,7 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 		return errno = ENOTSUP, -1;
 		break;
 	    case 3: /* DES/3DES enciphered communication */
-	    	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, bytes_read, MD_RECEIVE);
+	    	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, bytes_read, MD_RECEIVE, 0);
 
 		/*
 		 * Do some magic, the function can be called when operating on
@@ -1046,12 +1046,33 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
     if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_WRITE (settings.access_rights)) ||
 	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
 	size_t enciphered_length;
-	printf ("Crypto needed, badly!\n");
 	switch (settings.communication_settings) {
 	    case 0: /* Plain communication */
+	    case 2:
 		break;
 	    case 1: /* MACing secured communication */
-		return errno = ENOTSUP, -1;
+		if ((length) % 8) {
+		    enciphered_length = (((length) / 8) + 1) * 8;
+		} else {
+		    enciphered_length = length;
+		}
+
+		void *edata;
+		if (!(edata = malloc (enciphered_length)))
+		    return -1;
+		memcpy (edata, data, length);
+		bzero ((uint8_t *)edata + length, enciphered_length - length);
+		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, edata, enciphered_length, MD_SEND, 1);
+		void *mac = ((uint8_t *)edata) + enciphered_length - 8;
+
+		size_t maced_length = length + 4;
+		if (!(p = malloc (maced_length)))
+		    return -1;
+		memcpy (p, data, length);
+		memcpy ((uint8_t *)p + length, mac, 4);
+
+		free (edata);
+		length = maced_length;
 		break;
 	    case 3: /* DES/3DES enciphered communication */
 		/*
@@ -1072,7 +1093,7 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 		memcpy (p, data, length);
 		iso14443a_crc (p, length, (uint8_t *)p + length);
 		bzero ((uint8_t *)p + length + 2, enciphered_length - (length + 2));
-		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, enciphered_length, MD_SEND);
+		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, enciphered_length, MD_SEND, 0);
 		length = enciphered_length;
 		break;
 	    default: 
