@@ -886,7 +886,9 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
 static ssize_t
 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf)
 {
-    ssize_t bytes = 0;
+    ssize_t bytes_read = 0;
+
+    void *p = buf;
 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -899,25 +901,116 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
     BUFFER_APPEND_LE (cmd, offset, 3, sizeof (off_t));
     BUFFER_APPEND_LE (cmd, length, 3, sizeof (size_t));
 
+    // FIXME: It might be forbiden to get file settings.
+    struct mifare_desfire_file_settings settings;
+    if (mifare_desfire_get_file_settings (tag, file_no, &settings))
+	return -1;
+
+    /*
+     * Because cryptographic operations operates on 8-bytes blocks, do not
+     * assume the provided buffer is large enough for them to fit in it, and
+     * allocate ourself our memory for processing the cryptographic operations
+     * and only them copy the data back to the user provided buffer.
+     */
+    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ (settings.access_rights)) ||
+	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
+	switch (settings.communication_settings) {
+	    case 0: /* Plain communication */
+		break;
+	    case 1: /* MACing secured communication */
+		return errno = ENOTSUP, -1;
+		break;
+	    case 3: /* DES/3DES enciphered communication */
+		if (!(p = malloc (MAX_FRAME_SIZE - 1)))
+		    return -1;
+		break;
+	    default: 
+		return errno = ENOTSUP, -1;
+		break;
+	}
+    }
+
     do {
 	ssize_t frame_bytes;
 
 	DESFIRE_TRANSCEIVE (tag, cmd, res);
 
 	frame_bytes = BUFFER_SIZE (res) - 1;
-	memcpy ((uint8_t *)buf + bytes, res + 1, frame_bytes);
-	bytes += frame_bytes;
+	memcpy ((uint8_t *)p + bytes_read, res + 1, frame_bytes);
+	bytes_read += frame_bytes;
 
+	if (res[0] == 0xAF) {
+	    if (p != buf) {
+		// If we are handling memory, request more for next frame.
+		void *new_p;
+		if (!(new_p = realloc (p, bytes_read + MAX_FRAME_SIZE - 1)))
+		    return -1;
+
+		p = new_p;
+
+	    }
 	BUFFER_CLEAR (cmd);
 	BUFFER_APPEND (cmd, 0xAF);
+	}
 
-    } while (res[0] == 0xAF);
+    } while (res[0] != 0x00);
 
-    if (res[0] != 0x00) {
-	bytes = -1;
+    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ (settings.access_rights)) ||
+	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
+	switch (settings.communication_settings) {
+	    case 0: /* Plain communication */
+		break;
+	    case 1: /* MACing secured communication */
+		return errno = ENOTSUP, -1;
+		break;
+	    case 3: /* DES/3DES enciphered communication */
+	    	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, bytes_read, MD_RECEIVE);
+
+		/*
+		 * Do some magic, the function can be called when operating on
+		 * records.  In this case, the length argument is the number of
+		 * records to retreive, and not the number of bytes.  We have
+		 * therefore no other solution than to poke around to find the
+		 * CRC and ensure it is followed by NULL padding.  We can't
+		 * start by the end because the CRC is supposed to be 0 when
+		 * verified, and accumulating 0's in it should not change it.
+		 */
+		bool verified = false;
+		int crc_pos = bytes_read - 8;
+
+		do {
+		    uint16_t crc;
+		    iso14443a_crc (p, crc_pos, (uint8_t *)&crc);
+		    if (!crc) {
+			verified = true;
+			for (int n = crc_pos + 2; n < bytes_read; n++) {
+			    if (((uint8_t *)p)[n])
+				verified = false;
+			}
+		    }
+		    if (verified) {
+			bytes_read = crc_pos - 2;
+		    } else {
+			crc_pos++;
+		    }
+		} while (!verified);
+
+		if (!verified) {
+		    bytes_read = -1;
+		} else {
+		    memcpy (buf, p, bytes_read);
+		}
+		break;
+	    default: 
+		return errno = ENOTSUP, -1;
+		break;
+	}
     }
 
-    return bytes;
+    if (p != buf)
+	free (p);
+
+    return bytes_read;
 }
 
 ssize_t
