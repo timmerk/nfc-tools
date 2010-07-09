@@ -1126,15 +1126,25 @@ mifare_desfire_debit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
 int
 mifare_desfire_limited_credit (MifareTag tag, uint8_t file_no, int32_t amount)
 {
+    return mifare_desfire_limited_credit_ex (tag, file_no, amount, madame_soleil_get_write_communication_settings (tag, file_no));
+}
+int
+mifare_desfire_limited_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
+{
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
     BUFFER_INIT (cmd, 10);
     BUFFER_INIT (res, 1);
 
+    BUFFER_INIT (data, 4);
+    BUFFER_APPEND_LE (data, amount, 4, sizeof (int32_t));
+
     BUFFER_APPEND (cmd, 0x1C);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, amount, 4, sizeof (int32_t));
+    size_t n = 4;
+    void *d = mifare_cryto_preprocess_data (tag, data, &n, cs);
+    BUFFER_APPEND_BYTES (cmd, d, n);
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
