@@ -73,7 +73,9 @@ struct mifare_desfire_raw_file_settings {
 static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
 static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
 static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data);
+static ssize_t	 write_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs);
 static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf);
+static ssize_t	 read_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf, int cs);
 
 #define MAX_FRAME_SIZE 60
 
@@ -134,7 +136,7 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
     do { \
 	size_t __n = 0; \
 	while (__n < size) { \
-	    buffer_name[__##buffer_name##_n++] = (data)[__n++]; \
+	    buffer_name[__##buffer_name##_n++] = ((uint8_t *)data)[__n++]; \
 	} \
     } while (0)
 
@@ -197,6 +199,36 @@ static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_
 static void	*memdup (void *p, size_t n);
 static int32_t	 le24toh (uint8_t data[3]);
 
+int
+madame_soleil_get_read_communication_settings (MifareTag tag, uint8_t file_no)
+{
+    // FIXME: It might be forbiden to get file settings.
+    struct mifare_desfire_file_settings settings;
+    if (mifare_desfire_get_file_settings (tag, file_no, &settings))
+	return -1;
+
+    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ (settings.access_rights)) ||
+	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights)))
+	return settings.communication_settings;
+    else
+	return 0;
+}
+
+int
+madame_soleil_get_write_communication_settings (MifareTag tag, uint8_t file_no)
+{
+    // FIXME: It might be forbiden to get file settings.
+    struct mifare_desfire_file_settings settings;
+    if (mifare_desfire_get_file_settings (tag, file_no, &settings))
+	return -1;
+
+    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_WRITE (settings.access_rights)) ||
+	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights)))
+	return settings.communication_settings;
+    else
+	return 0;
+}
+
 static int32_t
 le24toh (uint8_t data[3])
 {
@@ -229,6 +261,8 @@ mifare_desfire_tag_new (void)
 	MIFARE_DESFIRE (tag)->last_picc_error = OPERATION_OK;
 	MIFARE_DESFIRE (tag)->last_pcd_error = NULL;
 	MIFARE_DESFIRE (tag)->session_key = NULL;
+	MIFARE_DESFIRE (tag)->crypto_buffer = NULL;
+	MIFARE_DESFIRE (tag)->crypto_buffer_size = 0;
     }
     return tag;
 }
@@ -241,6 +275,7 @@ mifare_desfire_tag_free (MifareTag tag)
 {
     free (MIFARE_DESFIRE (tag)->session_key);
     free (MIFARE_DESFIRE (tag)->last_pcd_error);
+    free (MIFARE_DESFIRE (tag)->crypto_buffer);
     free (tag);
 }
 
@@ -882,15 +917,18 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
 /*
  * Data manipulation commands.
  */
-
 static ssize_t
 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf)
 {
+    return read_data_ex (tag, command, file_no, offset, length, buf, madame_soleil_get_read_communication_settings (tag, file_no));
+}
+
+static ssize_t
+read_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf, int cs)
+{
     ssize_t bytes_read = 0;
-    size_t enciphered_length;
 
     void *p = buf;
-    void *edata;
 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -903,32 +941,9 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
     BUFFER_APPEND_LE (cmd, offset, 3, sizeof (off_t));
     BUFFER_APPEND_LE (cmd, length, 3, sizeof (size_t));
 
-    // FIXME: It might be forbiden to get file settings.
-    struct mifare_desfire_file_settings settings;
-    if (mifare_desfire_get_file_settings (tag, file_no, &settings))
-	return -1;
-
-    /*
-     * Because cryptographic operations operates on 8-bytes blocks, do not
-     * assume the provided buffer is large enough for them to fit in it, and
-     * allocate ourself our memory for processing the cryptographic operations
-     * and only them copy the data back to the user provided buffer.
-     */
-    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ (settings.access_rights)) ||
-	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
-	switch (settings.communication_settings) {
-	    case 0: /* Plain communication */
-	    case 2:
-		break;
-	    case 1: /* MACing secured communication */
-	    case 3: /* DES/3DES enciphered communication */
-		if (!(p = malloc (MAX_FRAME_SIZE - 1)))
-		    return -1;
-		break;
-	    default: 
-		return errno = ENOTSUP, -1;
-		break;
-	}
+    if (cs) {
+	if (!(p = assert_crypto_buffer_size (tag, MAX_FRAME_SIZE - 1)))
+	    return -1;
     }
 
     do {
@@ -943,11 +958,8 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 	if (res[0] == 0xAF) {
 	    if (p != buf) {
 		// If we are handling memory, request more for next frame.
-		void *new_p;
-		if (!(new_p = realloc (p, bytes_read + MAX_FRAME_SIZE - 1)))
+		if (!(p = assert_crypto_buffer_size (tag, bytes_read + MAX_FRAME_SIZE - 1)))
 		    return -1;
-
-		p = new_p;
 
 	    }
 	BUFFER_CLEAR (cmd);
@@ -956,86 +968,10 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 
     } while (res[0] != 0x00);
 
-    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ (settings.access_rights)) ||
-	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
-	switch (settings.communication_settings) {
-	    case 0: /* Plain communication */
-	    case 2:
-		break;
-	    case 1: /* MACing secured communication */
-
-		bytes_read -= 4;
-	        
-		if (bytes_read % 8) {
-		    enciphered_length = ((bytes_read / 8) + 1) * 8;
-		} else {
-		    enciphered_length = bytes_read / 8;
-		}
-		if (!(edata = malloc (enciphered_length)))
-		    return -1;
-
-		memcpy (edata, p, bytes_read);
-		bzero ((uint8_t *)edata + bytes_read, enciphered_length - bytes_read);
-		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, edata, enciphered_length, MD_SEND, 1);
-		/*                                                                          ,^^^^^^^
-		 * No!  This is not a typo! ------------------------------------------------'
-		 */
-
-		if (0 == memcmp ((uint8_t *)p + bytes_read, (uint8_t *)edata + enciphered_length - 8, 4)) {
-		    memcpy (buf, p, bytes_read);
-		} else {
-		    bytes_read = -1;
-		}
-
-		free (edata);
-
-		break;
-	    case 3: /* DES/3DES enciphered communication */
-	    	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, bytes_read, MD_RECEIVE, 0);
-
-		/*
-		 * Do some magic, the function can be called when operating on
-		 * records.  In this case, the length argument is the number of
-		 * records to retreive, and not the number of bytes.  We have
-		 * therefore no other solution than to poke around to find the
-		 * CRC and ensure it is followed by NULL padding.  We can't
-		 * start by the end because the CRC is supposed to be 0 when
-		 * verified, and accumulating 0's in it should not change it.
-		 */
-		bool verified = false;
-		int crc_pos = bytes_read - 8;
-
-		do {
-		    uint16_t crc;
-		    iso14443a_crc (p, crc_pos, (uint8_t *)&crc);
-		    if (!crc) {
-			verified = true;
-			for (int n = crc_pos + 2; n < bytes_read; n++) {
-			    if (((uint8_t *)p)[n])
-				verified = false;
-			}
-		    }
-		    if (verified) {
-			bytes_read = crc_pos - 2;
-		    } else {
-			crc_pos++;
-		    }
-		} while (!verified);
-
-		if (!verified) {
-		    bytes_read = -1;
-		} else {
-		    memcpy (buf, p, bytes_read);
-		}
-		break;
-	    default: 
-		return errno = ENOTSUP, -1;
-		break;
-	}
+    if (cs) {
+	p = mifare_cryto_postprocess_data (tag, p, &bytes_read, cs);
+	memcpy (buf, p, bytes_read);
     }
-
-    if (p != buf)
-	free (p);
 
     return bytes_read;
 }
@@ -1048,6 +984,12 @@ mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t l
 
 static ssize_t
 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data)
+{
+    return write_data_ex (tag, command, file_no, offset, length, data, madame_soleil_get_write_communication_settings (tag, file_no));
+}
+
+static ssize_t
+write_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     size_t bytes_left;
     size_t bytes_send = 0;
@@ -1065,70 +1007,7 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
     BUFFER_APPEND_LE (cmd, offset, 3, sizeof (off_t));
     BUFFER_APPEND_LE (cmd, length, 3, sizeof (size_t));
 
-    // FIXME: It might be forbiden to get file settings.
-    struct mifare_desfire_file_settings settings;
-    if (mifare_desfire_get_file_settings (tag, file_no, &settings))
-	return -1;
-
-    if ((MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_WRITE (settings.access_rights)) ||
-	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
-	size_t enciphered_length;
-	switch (settings.communication_settings) {
-	    case 0: /* Plain communication */
-	    case 2:
-		break;
-	    case 1: /* MACing secured communication */
-		if ((length) % 8) {
-		    enciphered_length = (((length) / 8) + 1) * 8;
-		} else {
-		    enciphered_length = length;
-		}
-
-		void *edata;
-		if (!(edata = malloc (enciphered_length)))
-		    return -1;
-		memcpy (edata, data, length);
-		bzero ((uint8_t *)edata + length, enciphered_length - length);
-		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, edata, enciphered_length, MD_SEND, 1);
-		void *mac = ((uint8_t *)edata) + enciphered_length - 8;
-
-		size_t maced_length = length + 4;
-		if (!(p = malloc (maced_length)))
-		    return -1;
-		memcpy (p, data, length);
-		memcpy ((uint8_t *)p + length, mac, 4);
-
-		free (edata);
-		length = maced_length;
-		break;
-	    case 3: /* DES/3DES enciphered communication */
-		/*
-		 * Setup a new buffer for the data to send featuring:
-		 *   - the actual data to send (length bytes);
-		 *   - the data CRC (2 bytes);
-		 *   - \0 padding to align on 8 bytes blocks.
-		 */
-		if ((length + 2) % 8) {
-		    enciphered_length = (((length + 2) / 8) + 1) * 8;
-		} else {
-		    enciphered_length = length + 2;
-		}
-
-		if (!(p = malloc (enciphered_length)))
-		    return -1;
-
-		memcpy (p, data, length);
-		iso14443a_crc (p, length, (uint8_t *)p + length);
-		bzero ((uint8_t *)p + length + 2, enciphered_length - (length + 2));
-		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, enciphered_length, MD_SEND, 0);
-		length = enciphered_length;
-		break;
-	    default: 
-		return errno = ENOTSUP, -1;
-		break;
-	}
-    }
-
+    p = mifare_cryto_preprocess_data (tag, data, &length, cs);
 
     bytes_left = 52;
 
@@ -1142,7 +1021,7 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 	bytes_send += frame_bytes;
 
 	if (0x00 == res[0])
-	    return bytes_send;
+	    break;
 
 	// PICC returned 0xAF and expects more data
 	BUFFER_CLEAR (cmd);
@@ -1150,11 +1029,13 @@ write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_
 	bytes_left = 0x59;
     }
 
-    if (p != data)
-	free (p);
+    if (0x00 != res[0]) {
+	// 0xAF (additionnal Frame) failure can happen here (wrong crypto method).
+	MIFARE_DESFIRE (tag)->last_picc_error = res[0];
+	bytes_send = -1;
+    }
 
-    // Only 0xAF (additionnal Frame) failure can happen here.
-    return MIFARE_DESFIRE (tag)->last_picc_error = res[0], -1;
+    return bytes_send;
 }
 
 ssize_t
@@ -1188,15 +1069,26 @@ mifare_desfire_get_value (MifareTag tag, uint8_t file_no, int32_t *value)
 int
 mifare_desfire_credit (MifareTag tag, uint8_t file_no, int32_t amount)
 {
+    return mifare_desfire_credit_ex (tag, file_no, amount, madame_soleil_get_write_communication_settings (tag, file_no));
+}
+
+int
+mifare_desfire_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
+{
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
     BUFFER_INIT (cmd, 10);
     BUFFER_INIT (res, 1);
 
+    BUFFER_INIT (data, 4);
+    BUFFER_APPEND_LE (data, amount, 4, sizeof (int32_t));
+
     BUFFER_APPEND (cmd, 0x0C);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, amount, 4, sizeof (int32_t));
+    size_t n = 4;
+    void *d = mifare_cryto_preprocess_data (tag, data, &n, cs);
+    BUFFER_APPEND_BYTES (cmd, d, n);
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
@@ -1206,15 +1098,25 @@ mifare_desfire_credit (MifareTag tag, uint8_t file_no, int32_t amount)
 int
 mifare_desfire_debit (MifareTag tag, uint8_t file_no, int32_t amount)
 {
+    return mifare_desfire_debit_ex (tag, file_no, amount, madame_soleil_get_write_communication_settings (tag, file_no));
+}
+int
+mifare_desfire_debit_ex (MifareTag tag, uint8_t file_no, int32_t amount, int cs)
+{
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
 
     BUFFER_INIT (cmd, 10);
     BUFFER_INIT (res, 1);
 
+    BUFFER_INIT (data, 4);
+    BUFFER_APPEND_LE (data, amount, 4, sizeof (int32_t));
+
     BUFFER_APPEND (cmd, 0xDC);
     BUFFER_APPEND (cmd, file_no);
-    BUFFER_APPEND_LE (cmd, amount, 4, sizeof (int32_t));
+    size_t n = 4;
+    void *d = mifare_cryto_preprocess_data (tag, data, &n, cs);
+    BUFFER_APPEND_BYTES (cmd, d, n);
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 

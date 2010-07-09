@@ -28,7 +28,11 @@
 #include "freefare_internal.h"
 
 static void	 xor8 (uint8_t *ivect, uint8_t *data);
-void		 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction, int mac);
+static void	 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction, int mac);
+
+static size_t	 padded_data_length (size_t nbytes);
+static size_t	 maced_data_length (size_t nbytes);
+static size_t	 enciphered_data_length (size_t nbytes);
 
 static void
 xor8 (uint8_t *ivect, uint8_t *data)
@@ -48,7 +52,193 @@ rol8(uint8_t *data)
     data[7] = first;
 }
 
-void
+/*
+ * Size required to store nbytes of data in a buffer of size n*8.
+ */
+static size_t
+padded_data_length (size_t nbytes)
+{
+    if (nbytes % 8)
+	return ((nbytes / 8) + 1) * 8;
+    else
+	return nbytes;
+}
+
+/*
+ * Buffer size required to MAC nbytes of data
+ */
+static size_t
+maced_data_length (size_t nbytes)
+{
+    return nbytes + 4;
+}
+/*
+ * Buffer size required to encipher nbytes of data and a two bytes CRC.
+ */
+static size_t
+enciphered_data_length (size_t nbytes)
+{
+    return padded_data_length (nbytes + 2);
+}
+
+
+/*
+ * Ensure that tag's crypto buffer is large enough to store nbytes of data.
+ */
+void *
+assert_crypto_buffer_size (MifareTag tag, size_t nbytes)
+{
+    void *res = MIFARE_DESFIRE (tag)->crypto_buffer;
+    if (MIFARE_DESFIRE (tag)->crypto_buffer_size < nbytes) {
+	if ((res = realloc (MIFARE_DESFIRE (tag)->crypto_buffer, nbytes))) {
+	    MIFARE_DESFIRE (tag)->crypto_buffer = res;
+	    MIFARE_DESFIRE (tag)->crypto_buffer_size = nbytes;
+	}
+    }
+    return res;
+}
+
+void *
+mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, int communication_settings)
+{
+    void *res;
+    uint8_t mac[4];
+    size_t edl, mdl;
+
+    switch (communication_settings) {
+	case 0:
+	case 2:
+	    res = data;
+	    break;
+	case 1:
+	    edl = padded_data_length (*nbytes);
+	    if (!(res = assert_crypto_buffer_size (tag, edl)))
+		abort();
+
+	    // Fill in the crypto buffer with data ...
+	    memcpy (res, data, *nbytes);
+	    // ... and 0 padding
+	    bzero ((uint8_t *)res + *nbytes, edl - *nbytes);
+
+	    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, res, edl, MD_SEND, 1);
+
+	    memcpy (mac, (uint8_t *)res + edl - 8, 4);
+
+	    mdl = maced_data_length (*nbytes);
+	    if (!(res = assert_crypto_buffer_size (tag, mdl)))
+		abort();
+
+	    memcpy (res, data, *nbytes);
+	    memcpy ((uint8_t *)res + *nbytes, mac, 4);
+
+	    *nbytes += 4;
+
+	    break;
+	case 3:
+	    edl = enciphered_data_length (*nbytes);
+	    if (!(res = assert_crypto_buffer_size (tag, edl)))
+		abort();
+
+	    // Fill in the crypto buffer with data ...
+	    memcpy (res, data, *nbytes);
+	    // ... CRC ...
+	    append_iso14443a_crc (res, *nbytes);
+	    // ... and 0 padding
+	    bzero ((uint8_t *)(res) + *nbytes + 2, edl - *nbytes);
+
+	    *nbytes = edl;
+
+	    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, res, *nbytes, MD_SEND, 0);
+
+	    break;
+	default:
+	    res = NULL;
+	    break;
+    }
+
+    return res;
+}
+
+void *
+mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int communication_settings)
+{
+    void *res = data;
+    size_t edl;
+    void *edata;
+
+    switch (communication_settings) {
+	case 0:
+	case 2:
+	    break;
+	case 1:
+	    *nbytes -= 4;
+
+	    edl = enciphered_data_length (*nbytes);
+	    edata = malloc (edl);
+
+	    memcpy (edata, data, *nbytes);
+	    bzero ((uint8_t *)edata + *nbytes, edl - *nbytes);
+
+	    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, edata, edl, MD_SEND, 1);
+	    /*                                                            ,^^^^^^^
+	     * No!  This is not a typo! ---------------------------------'
+	     */
+
+	    if (0 != memcmp ((uint8_t *)data + *nbytes, (uint8_t *)edata + edl - 8, 4)) {
+		printf ("MACing not verified\n");
+		*nbytes = -1;
+		res = NULL;
+	    }
+
+	    free (edata);
+
+	    break;
+	case 3:
+	    mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, res, *nbytes, MD_RECEIVE, 0);
+
+	    /*
+	     * Look for the CRC and ensure it is following by NULL padding.  We
+	     * can't start by the end because the CRC is supposed to be 0 when
+	     * verified, and accumulating 0's in it should not change it.
+	     */
+	    bool verified = false;
+	    int end_crc_pos = *nbytes - 7; // The CRC can be over two blocks
+
+	    do {
+		uint16_t crc;
+		iso14443a_crc (res, end_crc_pos, (uint8_t *)&crc);
+		if (!crc) {
+		    verified = true;
+		    for (int n = end_crc_pos; n < *nbytes; n++) {
+			if (((uint8_t *)res)[n])
+			    verified = false;
+		    }
+		}
+		if (verified) {
+		    *nbytes = end_crc_pos - 2;
+		} else {
+		    end_crc_pos++;
+		}
+	    } while (!verified && (end_crc_pos < *nbytes));
+
+	    if (!verified) {
+		printf ("(3)DES not verified\n");
+		*nbytes = -1;
+		res = NULL;
+	    }
+
+	    break;
+	default:
+	    printf ("Unknown communication settings\n");
+	    *nbytes = -1;
+	    res = NULL;
+	    break;
+
+    }
+    return res;
+}
+
+static void
 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction, int mac)
 {
     uint8_t ovect[8];
