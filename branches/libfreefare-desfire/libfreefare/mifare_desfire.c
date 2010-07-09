@@ -887,8 +887,10 @@ static ssize_t
 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf)
 {
     ssize_t bytes_read = 0;
+    size_t enciphered_length;
 
     void *p = buf;
+    void *edata;
 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -916,10 +918,9 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
 	switch (settings.communication_settings) {
 	    case 0: /* Plain communication */
+	    case 2:
 		break;
 	    case 1: /* MACing secured communication */
-		return errno = ENOTSUP, -1;
-		break;
 	    case 3: /* DES/3DES enciphered communication */
 		if (!(p = malloc (MAX_FRAME_SIZE - 1)))
 		    return -1;
@@ -959,9 +960,35 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
 	(MIFARE_DESFIRE (tag)->authenticated_key_no == MDAR_READ_WRITE (settings.access_rights))) {
 	switch (settings.communication_settings) {
 	    case 0: /* Plain communication */
+	    case 2:
 		break;
 	    case 1: /* MACing secured communication */
-		return errno = ENOTSUP, -1;
+
+		bytes_read -= 4;
+	        
+		if (bytes_read % 8) {
+		    enciphered_length = ((bytes_read / 8) + 1) * 8;
+		} else {
+		    enciphered_length = bytes_read / 8;
+		}
+		if (!(edata = malloc (enciphered_length)))
+		    return -1;
+
+		memcpy (edata, p, bytes_read);
+		bzero ((uint8_t *)edata + bytes_read, enciphered_length - bytes_read);
+		mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, edata, enciphered_length, MD_SEND, 1);
+		/*                                                                          ,^^^^^^^
+		 * No!  This is not a typo! ------------------------------------------------'
+		 */
+
+		if (0 == memcmp ((uint8_t *)p + bytes_read, (uint8_t *)edata + enciphered_length - 8, 4)) {
+		    memcpy (buf, p, bytes_read);
+		} else {
+		    bytes_read = -1;
+		}
+
+		free (edata);
+
 		break;
 	    case 3: /* DES/3DES enciphered communication */
 	    	mifare_cbc_des (MIFARE_DESFIRE (tag)->session_key, p, bytes_read, MD_RECEIVE, 0);
