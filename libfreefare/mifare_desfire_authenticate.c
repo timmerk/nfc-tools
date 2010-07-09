@@ -28,7 +28,7 @@
 #include "freefare_internal.h"
 
 static void	 xor8 (uint8_t *ivect, uint8_t *data);
-void		 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction);
+void		 mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction, int mac);
 
 static void
 xor8 (uint8_t *ivect, uint8_t *data)
@@ -49,7 +49,7 @@ rol8(uint8_t *data)
 }
 
 void
-mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction)
+mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection direction, int mac)
 {
     uint8_t ovect[8];
 
@@ -62,13 +62,23 @@ mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection
 
     switch (key->type) {
 	case T_DES:
+	    if (mac) {
+		DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &(key->ks1), DES_ENCRYPT);
+	    } else {
 	    DES_ecb_encrypt ((DES_cblock *) data, (DES_cblock *) edata, &(key->ks1), DES_DECRYPT);
+	    }
 	    memcpy (data, edata, 8);
 	    break;
 	case T_3DES:
+	    if (mac) {
+		DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &(key->ks1), DES_ENCRYPT);
+		DES_ecb_encrypt ((DES_cblock *) edata, (DES_cblock *) data,  &(key->ks2), DES_DECRYPT);
+		DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &(key->ks1), DES_ENCRYPT);
+	    } else {
 	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &(key->ks1), DES_DECRYPT);
 	    DES_ecb_encrypt ((DES_cblock *) edata, (DES_cblock *) data,  &(key->ks2), DES_ENCRYPT);
 	    DES_ecb_encrypt ((DES_cblock *) data,  (DES_cblock *) edata, &(key->ks1), DES_DECRYPT);
+	    }
 	    memcpy (data, edata, 8);
 	    break;
     }
@@ -82,14 +92,14 @@ mifare_des (MifareDESFireKey key, uint8_t *data, uint8_t *ivect, MifareDirection
 }
 
 void
-mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, MifareDirection direction)
+mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, MifareDirection direction, int mac)
 {
     size_t offset = 0;
     uint8_t ivect[8];
     bzero (ivect, sizeof (ivect));
 
     while (offset < data_size) {
-	mifare_des (key, data + offset, ivect, direction);
+	mifare_des (key, data + offset, ivect, direction, mac);
 	offset += 8;
     }
 
