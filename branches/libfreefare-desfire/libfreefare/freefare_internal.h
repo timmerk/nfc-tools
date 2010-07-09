@@ -62,8 +62,11 @@ typedef enum {
     MD_RECEIVE
 } MifareDirection;
 
+void		*mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, int communication_settings);
+void		*mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int communication_settings);
 void		 mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, MifareDirection direction, int mac);
 void		 rol8(uint8_t *data);
+void		*assert_crypto_buffer_size (MifareTag tag, size_t nbytes);
 
 #define MIFARE_ULTRALIGHT_PAGE_COUNT 16
 
@@ -126,6 +129,8 @@ struct mifare_desfire_tag {
     char *last_pcd_error;
     MifareDESFireKey session_key;
     uint8_t authenticated_key_no;
+    uint8_t *crypto_buffer;
+    size_t crypto_buffer_size;
 };
 
 MifareDESFireKey mifare_desfire_session_key_new (uint8_t rnda[8], uint8_t rndb[8], MifareDESFireKey authentication_key);
