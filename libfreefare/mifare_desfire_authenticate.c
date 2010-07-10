@@ -210,7 +210,8 @@ mifare_cryto_postprocess_data (MifareTag tag, void *data, ssize_t *nbytes, int c
 		if (!crc) {
 		    verified = true;
 		    for (int n = end_crc_pos; n < *nbytes; n++) {
-			if (((uint8_t *)res)[n])
+			uint8_t byte = ((uint8_t *)res)[n];
+			if (!( (0x00 == byte) || ((0x80 == byte) && (n == end_crc_pos)) ))
 			    verified = false;
 		    }
 		}
