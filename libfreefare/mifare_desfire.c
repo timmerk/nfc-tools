@@ -1047,8 +1047,15 @@ mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t 
 int
 mifare_desfire_get_value (MifareTag tag, uint8_t file_no, int32_t *value)
 {
+    return mifare_desfire_get_value_ex (tag, file_no, value, madame_soleil_get_read_communication_settings (tag, file_no));
+}
+int
+mifare_desfire_get_value_ex (MifareTag tag, uint8_t file_no, int32_t *value, int cs)
+{
     if (!value)
 	return errno = EINVAL, -1;
+
+    void *p;
 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -1061,7 +1068,18 @@ mifare_desfire_get_value (MifareTag tag, uint8_t file_no, int32_t *value)
 
     DESFIRE_TRANSCEIVE (tag, cmd, res);
 
-    *value = le32toh (*(int32_t *)(res + 1));
+    p = (uint8_t *)res + 1;
+
+    if (cs) {
+	ssize_t rdl = BUFFER_SIZE (res) - 1;
+	p = mifare_cryto_postprocess_data (tag, p, &rdl, cs);
+	if (rdl != 4) {
+	    printf ("invalid data length");
+	    return -1;
+	}
+    }
+
+    *value = le32toh (*(int32_t *)(p));
 
     return 0;
 }
