@@ -962,8 +962,8 @@ read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t
     } while (res[0] != 0x00);
 
     if (cs) {
-	p = mifare_cryto_postprocess_data (tag, p, &bytes_read, cs);
-	memcpy (data, p, bytes_read);
+	if (mifare_cryto_postprocess_data (tag, p, &bytes_read, cs))
+	    memcpy (data, p, bytes_read);
     }
 
     return bytes_read;
