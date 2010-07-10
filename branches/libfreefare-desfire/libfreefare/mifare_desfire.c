@@ -72,10 +72,8 @@ struct mifare_desfire_raw_file_settings {
 
 static int	 create_file1 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t file_size);
 static int	 create_file2 (MifareTag tag, uint8_t command, uint8_t file_no, uint8_t communication_settings, uint16_t access_rights, uint32_t record_size, uint32_t max_number_of_records);
-static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data);
-static ssize_t	 write_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs);
-static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf);
-static ssize_t	 read_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf, int cs);
+static ssize_t	 write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs);
+static ssize_t	 read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs);
 
 #define MAX_FRAME_SIZE 60
 
@@ -917,18 +915,13 @@ mifare_desfire_delete_file (MifareTag tag, uint8_t file_no)
 /*
  * Data manipulation commands.
  */
-static ssize_t
-read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf)
-{
-    return read_data_ex (tag, command, file_no, offset, length, buf, madame_soleil_get_read_communication_settings (tag, file_no));
-}
 
 static ssize_t
-read_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *buf, int cs)
+read_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     ssize_t bytes_read = 0;
 
-    void *p = buf;
+    void *p = data;
 
     ASSERT_ACTIVE (tag);
     ASSERT_MIFARE_DESFIRE (tag);
@@ -956,7 +949,7 @@ read_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, siz
 	bytes_read += frame_bytes;
 
 	if (res[0] == 0xAF) {
-	    if (p != buf) {
+	    if (p != data) {
 		// If we are handling memory, request more for next frame.
 		if (!(p = assert_crypto_buffer_size (tag, bytes_read + MAX_FRAME_SIZE - 1)))
 		    return -1;
@@ -970,26 +963,26 @@ read_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, siz
 
     if (cs) {
 	p = mifare_cryto_postprocess_data (tag, p, &bytes_read, cs);
-	memcpy (buf, p, bytes_read);
+	memcpy (data, p, bytes_read);
     }
 
     return bytes_read;
 }
 
 ssize_t
-mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf)
+mifare_desfire_read_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
-    return read_data (tag, 0xBD, file_no, offset, length, buf);
+    return mifare_desfire_read_data_ex (tag, file_no, offset, length, data, madame_soleil_get_read_communication_settings (tag, file_no));
+}
+
+ssize_t
+mifare_desfire_read_data_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+{
+    return read_data (tag, 0xBD, file_no, offset, length, data, cs);
 }
 
 static ssize_t
-write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data)
-{
-    return write_data_ex (tag, command, file_no, offset, length, data, madame_soleil_get_write_communication_settings (tag, file_no));
-}
-
-static ssize_t
-write_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+write_data (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
 {
     size_t bytes_left;
     size_t bytes_send = 0;
@@ -1041,7 +1034,13 @@ write_data_ex (MifareTag tag, uint8_t command, uint8_t file_no, off_t offset, si
 ssize_t
 mifare_desfire_write_data (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
-    return write_data (tag, 0x3D, file_no, offset, length, data);
+    return mifare_desfire_write_data_ex (tag, file_no, offset, length, data, madame_soleil_get_write_communication_settings (tag, file_no));
+}
+
+ssize_t
+mifare_desfire_write_data_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+{
+    return write_data (tag, 0x3D, file_no, offset, length, data, cs);
 }
 
 int
@@ -1172,13 +1171,24 @@ mifare_desfire_limited_credit_ex (MifareTag tag, uint8_t file_no, int32_t amount
 ssize_t
 mifare_desfire_write_record (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
-    return write_data (tag, 0x3B, file_no, offset, length, data);
+    return mifare_desfire_write_record_ex (tag, file_no, offset, length, data, madame_soleil_get_write_communication_settings (tag, file_no));
+}
+ssize_t
+mifare_desfire_write_record_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+{
+    return write_data (tag, 0x3B, file_no, offset, length, data, cs);
 }
 
 ssize_t
-mifare_desfire_read_records (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *buf)
+mifare_desfire_read_records (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data)
 {
-    return read_data (tag, 0xBB, file_no, offset, length, buf);
+    return mifare_desfire_read_records_ex (tag, file_no, offset, length, data, madame_soleil_get_read_communication_settings (tag, file_no));
+}
+
+ssize_t
+mifare_desfire_read_records_ex (MifareTag tag, uint8_t file_no, off_t offset, size_t length, void *data, int cs)
+{
+    return read_data (tag, 0xBB, file_no, offset, length, data, cs);
 }
 
 int
