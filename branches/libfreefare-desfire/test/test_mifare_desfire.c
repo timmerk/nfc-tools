@@ -881,3 +881,43 @@ test_mifare_desfire_get_tag_friendly_name (void)
     cut_assert_not_null (name, cut_message ("freefare_get_tag_friendly_name() failed"));
 }
 
+#define NAID 28
+
+void
+test_mifare_desfire_get_many_application_ids (void)
+{
+    int res;
+
+    MifareDESFireKey key = mifare_desfire_des_key_new_with_version (key_data_null);
+    res = mifare_desfire_authenticate (tag, 0, key);
+    cut_assert_success ("mifare_desfire_authenticate()");
+    mifare_desfire_key_free (key);
+
+    /* Wipeout the card */
+    res = mifare_desfire_format_picc (tag);
+    cut_assert_success ("mifare_desfire_format_picc()");
+
+    for (int i = 0; i < NAID; i++) {
+	MifareDESFireAID aid = mifare_desfire_aid_new (i, i, i % 0x10);
+
+	res = mifare_desfire_create_application (tag, aid, 0xff, 0);
+	cut_assert_success ("mifare_desfire_create_application()");
+
+	free (aid);
+    }
+
+
+    MifareDESFireAID *aids;
+    size_t aid_count;
+
+    res = mifare_desfire_get_application_ids (tag, &aids, &aid_count);
+    cut_assert_success ("mifare_desfire_get_application_ids()");
+
+    cut_assert_equal_int (NAID, aid_count, cut_message ("count"));
+
+    mifare_desfire_free_application_ids (aids);
+
+    /* Wipeout the card */
+    res = mifare_desfire_format_picc (tag);
+    cut_assert_success ("mifare_desfire_format_picc()");
+}
