@@ -79,7 +79,7 @@ linkedman = \
 	    mifare_desfire.3 mifare_desfire_commit_transaction.3 \
 	    mifare_desfire.3 mifare_desfire_connect.3 \
 	    mifare_desfire.3 mifare_desfire_create_application.3 \
-	    mifare_desfire.3 mifare_desfire_create_backup_data_file .3 \
+	    mifare_desfire.3 mifare_desfire_create_backup_data_file.3 \
 	    mifare_desfire.3 mifare_desfire_create_cyclic_record_file.3 \
 	    mifare_desfire.3 mifare_desfire_create_linear_record_file.3 \
 	    mifare_desfire.3 mifare_desfire_create_std_data_file.3 \
