@@ -921,3 +921,48 @@ test_mifare_desfire_get_many_application_ids (void)
     res = mifare_desfire_format_picc (tag);
     cut_assert_success ("mifare_desfire_format_picc()");
 }
+
+void
+test_mifare_desfire_des_macing(void)
+{
+    int res;
+
+    MifareDESFireKey key = mifare_desfire_des_key_new_with_version (key_data_null);
+    res = mifare_desfire_authenticate (tag, 0, key);
+    cut_assert_success ("mifare_desfire_authenticate()");
+
+    MifareDESFireAID aid = mifare_desfire_aid_new (0x12, 0x34, 0x5);
+    res = mifare_desfire_create_application (tag, aid, 0xFF, 1);
+    cut_assert_success ("mifare_desfire_create_application()");
+
+    res = mifare_desfire_select_application (tag, aid);
+    cut_assert_success ("mifare_desfire_select_application");
+    free (aid);
+
+    res = mifare_desfire_authenticate (tag, 0, key);
+    cut_assert_success ("mifare_desfire_authenticate()");
+
+    res = mifare_desfire_create_std_data_file (tag, 1, MDCM_MACING, 0x0000, 20);
+    cut_assert_success ("mifare_desfire_create_std_data_file()");
+
+    char *s= "Hello World";
+    res = mifare_desfire_write_data (tag, 1, 0, strlen (s), s);
+    cut_assert_success ("mifare_desfire_write_data()");
+
+    char buffer[20];
+    res = mifare_desfire_read_data (tag, 1, 0, 0, buffer);
+    cut_assert_success ("mifare_desfire_read_data()");
+    cut_assert_equal_int (20, res, cut_message ("retval"));
+    cut_assert_equal_string (s, buffer, cut_message ("value"));
+
+    res = mifare_desfire_select_application (tag, NULL);
+    cut_assert_success ("mifare_desfire_select_application");
+    res = mifare_desfire_authenticate (tag, 0, key);
+    cut_assert_success ("mifare_desfire_authenticate()");
+
+    /* Wipeout the card */
+    res = mifare_desfire_format_picc (tag);
+    cut_assert_success ("mifare_desfire_format_picc()");
+
+    mifare_desfire_key_free (key);
+}
