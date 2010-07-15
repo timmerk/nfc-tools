@@ -21,10 +21,11 @@
  * http://ridrix.wordpress.com/2009/09/19/mifare-desfire-communication-example/
  */
 
-#include <openssl/des.h>
-#include <sys/types.h>
-
 #include "config.h"
+
+#if defined(HAVE_SYS_TYPES_H)
+#  include <sys/types.h>
+#endif
 
 #if defined(HAVE_SYS_ENDIAN_H)
 #  include <sys/endian.h>
@@ -38,6 +39,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include <freefare.h>
 #include "freefare_internal.h"
