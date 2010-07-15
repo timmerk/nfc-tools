@@ -22,8 +22,16 @@
 
 #include "config.h"
 
+// FIXME: Needs testing;
+// TODO:  Implement all or nothing here;  It's too easy to forget to add
+//        required line on update.
+
 #if !defined(le32toh) && defined(letoh32)
 #  define le32toh(x) letoh32(x)
+#endif
+
+#if !defined(le16toh) && defined(letoh16)
+#  define le16toh(x) letoh16(x)
 #endif
 
 #if defined(HAVE_BYTESWAP_H)
@@ -31,12 +39,26 @@
 #if !defined(le32toh) || !defined(htole32)
   #if BYTE_ORDER == LITTLE_ENDIAN
     #define le32toh(x) (x)
-    #define htole32(x) bswap_32(x)
+    #define htole32(x) (x)
   #else
     #define le32toh(x) bswap_32(x)
-    #define htole32(x) (x)
+    #define htole32(x) bswap_32(x)
   #endif
 #endif
+#endif
+
+#if !defined(htole16) && defined(bswap_16)
+# if BYTE_ORDER == LITTLE_ENDIAN
+#  define be16toh(x) (bswap_16(x))
+#  define htobe16(x) (bswap_16(x))
+#  define htole16(x) (x)
+#  define le16toh(x) (x)
+# else
+#  define be16toh(x) (x)
+#  define htobe16(x) (x)
+#  define htole16(x) (bswap_16(x))
+#  define le16toh(x) (bswap_16(x))
+# endif
 #endif
 
 #include <openssl/des.h>
