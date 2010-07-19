@@ -144,7 +144,7 @@ mifare_cryto_preprocess_data (MifareTag tag, void *data, size_t *nbytes, int com
 	    // ... CRC ...
 	    append_iso14443a_crc (res, *nbytes);
 	    // ... and 0 padding
-	    bzero ((uint8_t *)(res) + *nbytes + 2, edl - *nbytes);
+	    bzero ((uint8_t *)(res) + *nbytes + 2, edl - *nbytes - 2);
 
 	    *nbytes = edl;
 
