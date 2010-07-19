@@ -166,7 +166,7 @@ enum mifare_desfire_file_types {
 
 #define MDCM_PLAIN   0x00
 #define MDCM_MACING  0x01
-#define MDCM_FULLDES 0x02
+#define MDCM_FULLDES 0x03
 
 /* Access right */
 
