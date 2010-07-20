@@ -27,10 +27,12 @@ libfreefare_la_HEADERS = freefare.h
 libfreefare_ladir = $(includedir)
 
 man_MANS = freefare.3 \
-	   mifare_ultralight.3 \
-	   mifare_classic.3 \
 	   mad.3 \
 	   mifare_application.3 \
+	   mifare_classic.3 \
+	   mifare_desfire.3 \
+	   mifare_desfire_key.3 \
+	   mifare_ultralight.3 \
 	   tlv.3
 
 linkedman = \
@@ -112,6 +114,13 @@ linkedman = \
 	    mifare_desfire.3 mifare_desfire_write_data_ex.3 \
 	    mifare_desfire.3 mifare_desfire_write_record.3 \
 	    mifare_desfire.3 mifare_desfire_write_record_ex.3 \
+	    mifare_desfire_key.3 mifare_desfire_3des_key_new.3 \
+	    mifare_desfire_key.3 mifare_desfire_3des_key_new_with_version.3 \
+	    mifare_desfire_key.3 mifare_desfire_des_key_new.3 \
+	    mifare_desfire_key.3 mifare_desfire_des_key_new_with_version.3 \
+	    mifare_desfire_key.3 mifare_desfire_key_free.3 \
+	    mifare_desfire_key.3 mifare_desfire_key_get_version.3 \
+	    mifare_desfire_key.3 mifare_desfire_key_set_version.3 \
 	    mifare_ultralight.3 mifare_ultralight_connect.3 \
 	    mifare_ultralight.3 mifare_ultralight_disconnect.3 \
 	    mifare_ultralight.3 mifare_ultralight_get_uid.3 \
