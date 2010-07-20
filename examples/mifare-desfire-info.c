@@ -77,7 +77,7 @@ main(int argc, char *argv[])
 	printf ("===> Version information for tag %s:\n", tag_uid);
 	printf ("UID:                      0x%02x%02x%02x%02x%02x%02x%02x\n", info.uid[0], info.uid[1], info.uid[2], info.uid[3], info.uid[4], info.uid[5], info.uid[6]);
 	printf ("Batch number:             0x%02x%02x%02x%02x%02x\n", info.batch_number[0], info.batch_number[1], info.batch_number[2], info.batch_number[3], info.batch_number[4]);
-	printf ("Production date:          week %d, 20%02d\n", info.production_week, info.production_year);
+	printf ("Production date:          week %d, 20%02x\n", info.production_week, info.production_year);
 	printf ("Hardware Information:\n");
 	printf ("    Vendor ID:            0x%02x\n", info.hardware.vendor_id);
 	printf ("    Type:                 0x%02x\n", info.hardware.type);
