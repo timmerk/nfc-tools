@@ -24,6 +24,11 @@ make
 sudo make install
 }}}
 
+NFCd use D-Bus and D-Bus needs policy file to allow NFCd to publish on system bus:
+{{{
+sudo cp nfcd.conf /etc/dbus-1/system.d/
+}}}
+
 Once these commands succeed, just type:
 {{{
 sudo nfcd
