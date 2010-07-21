@@ -21,13 +21,12 @@ mkdir build
 cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 make
-su -c 'make install clean'
--> type your root password <-
+sudo make install
 }}}
 
 Once these commands succeed, just type:
 {{{
-nfcd
+sudo nfcd
 }}}
 
-Note: ATM, NFCd provide D-Bus interface on user's session bus.
+Note: ATM, NFCd provide D-Bus interface on system bus.
