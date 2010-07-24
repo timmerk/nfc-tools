@@ -39,9 +39,20 @@ main(int argc, char *argv[])
     if (argc > 1)
 	errx (EXIT_FAILURE, "usage: %s", argv[0]);
 
-    device = nfc_connect (NULL);
-    if (!device)
+    nfc_device_desc_t devices[8];
+    size_t device_count;
+
+    nfc_list_devices (devices, 8, &device_count);
+    if (!device_count)
         errx (EXIT_FAILURE, "No NFC device found.");
+
+    for (size_t d = 0; d < device_count; d++) {
+	device = nfc_connect (&(devices[d]));
+	if (!device) {
+	    warnx ("nfc_connect() failed.");
+	    error = EXIT_FAILURE;
+	    continue;
+	}
 
     tags = freefare_get_tags (device);
     if (!tags) {
@@ -63,7 +74,7 @@ main(int argc, char *argv[])
 	res = mifare_desfire_connect (tags[i]);
 	if (res < 0) {
 	    warnx ("Can't connect to Mifare DESFire target.");
-	    error = 1;
+	    error = EXIT_FAILURE;
 	    break;
 	}
 
@@ -121,6 +132,7 @@ main(int argc, char *argv[])
 
     freefare_free_tags (tags);
     nfc_disconnect (device);
+    }
 
     exit (error);
 } /* main() */
