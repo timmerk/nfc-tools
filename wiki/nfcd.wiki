@@ -29,9 +29,16 @@ NFCd use D-Bus and D-Bus needs policy file to allow NFCd to publish on system bu
 sudo cp nfcd.conf /etc/dbus-1/system.d/
 }}}
 
+= Run =
 Once these commands succeed, just type:
 {{{
 sudo nfcd
 }}}
 
 Note: ATM, NFCd provide D-Bus interface on system bus.
+
+= Debug =
+You need to activate special flags in order to debug, to do this you simply need to activate "Debug" target using CMake
+{{{
+cmake .. -DCMAKE_BUILD_TYPE=Debug
+}}}
