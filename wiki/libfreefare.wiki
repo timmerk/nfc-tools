@@ -48,3 +48,15 @@ Once fetched, you can now compile *libfreefare* using usual autotools way:
 make
 sudo make install
 }}}
+
+= Debug =
+In order to debug using gdb, you need to compile with some CFLAGS:
+{{{
+CFLAGS="-g -Wall -pedantic -O0 -ggdb" ./configure --prefix=/usr
+make clean all
+}}}
+
+To debug a example (e.g. mifare-classic-write-ndef), you need to run the following command:
+{{{
+libtool --mode=execute gdb examples/mifare-classic-write-ndef
+}}}
