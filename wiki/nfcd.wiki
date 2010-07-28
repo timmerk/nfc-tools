@@ -9,8 +9,8 @@ NFCd is written in C++, it use Qt, libfreefare, libndef and libnfc.
 = Requirements =
   * CMake (>= 2.6)
   * Qt4 core (>= 4.3)
-  * [http://www.libnfc.org/documentation/installation libnfc] (>= 1.3.4);
-  * [http://code.google.com/p/nfc-tools/wiki/libfreefare libfreefare] (>= r270);
+  * [http://www.libnfc.org/documentation/installation libnfc] (>= 1.3.9);
+  * [http://code.google.com/p/nfc-tools/wiki/libfreefare libfreefare] (>= r509);
   * [http://code.google.com/p/libndef/source/browse/trunk/INSTALL libndef] (>= 1.0.1).
 
 = Build =
