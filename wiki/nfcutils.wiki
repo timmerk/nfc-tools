@@ -24,14 +24,15 @@ make install
 }}}
 
 = Usage =
-Simply put tags in NFC device field and run *lsnfc*, i.e. with 5 NXP DESFire on a touchatag device:
+Simply put tags in NFC device field and run *lsnfc*
+
+Example with various tags on a touchatag device:
 {{{
 $ lsnfc
-device = ACR122U102 - PN532 v1.4 (0x07)
-  ISO14443A: NXP MIFARE DESFire (UID=04453501db2480)
-  ISO14443A: NXP MIFARE DESFire (UID=042e4201db2480)
-  ISO14443A: NXP MIFARE DESFire (UID=04145109db2480)
-  ISO14443A: NXP MIFARE DESFire (UID=04443401db2480)
-  ISO14443A: NXP MIFARE DESFire (UID=04400b09db2480)
-5 tag(s) have been found.
+device = ACS ACR 38U-CCID 01 00 / ACR122U102 - PN532 v1.4 (0x07)
+NXP MIFARE Classic 1k (UID=6e0e57b8)
+NXP MIFARE DESFire EV1 2k (UID=046e22c9c92480)
+NXP MIFARE DESFire 4k (UID=042e4201db2480)
+NXP MIFARE UltraLight C (UID=047816c1ff2680)
+4 tag(s) on device.
 }}}
