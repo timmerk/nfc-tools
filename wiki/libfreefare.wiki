@@ -11,9 +11,9 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 <tr><th colspan="2">Tags</th></tr>
 <tr><td>MIFARE Classic 1k</td><td style="background-color: #aaffaa">Supported</td></tr>
 <tr><td>MIFARE Classic 4k</td><td style="background-color: #ffffaa">Supported</td></tr>
-<tr><td>MIFARE DESFire 2k</td><td style="background-color: #ffaaaa">Needs testing</td></tr>
-<tr><td>MIFARE DESFire 4k</td>   <td style="background-color: #ffffaa">Needs testing</td></tr>
-<tr><td>MIFARE DESFire 8k</td><td style="background-color: #ffaaaa">Needs testing</td></tr>
+<tr><td>MIFARE DESFire 2k</td><td style="background-color: #ffaaaa">Supported</td></tr>
+<tr><td>MIFARE DESFire 4k</td>   <td style="background-color: #ffffaa">Supported</td></tr>
+<tr><td>MIFARE DESFire 8k</td><td style="background-color: #ffaaaa">Supported</td></tr>
 <tr><td>MIFARE DESFire EV1</td><td style="background-color: #ffaaaa">No AES support</td></tr>
 <tr><td>MIFARE Mini</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
 <tr><td>MIFARE Plus S 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
@@ -26,7 +26,7 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 <tr><th colspan="2">Support</th></tr>
 <tr><td>Mifare Application Directory (MAD) v1</td><td style="background-color: #aaffaa">Supported</td></tr>
 <tr><td>Mifare Application Directory (MAD) v2</td><td style="background-color: #ffffaa">Supported</td></tr>
-<tr><td>Mifare Application Directory (MAD) v3</td><td style="background-color: #ffaaaa">Needs testing (part of Mifare DESFire support)</td></tr>
+<tr><td>Mifare Application Directory (MAD) v3</td><td style="background-color: #ffaaaa">Supported (part of Mifare DESFire support)</td></tr>
 </table>
 
 = Installation =
