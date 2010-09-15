@@ -1,0 +1,18 @@
+#summary Mifare Classic Offline Cracker
+= Introduction =
+
+[https://www.nethemba.com/ Nethemba] have implemented and released an open source implementation of "offline nested" attack.
+
+= Installation =
+{{{
+autoreconf -vis
+./configure
+make
+}}}
+
+= Usage =
+Put one Mifare Classic tag that you want keys recovering;
+Lauching mfoc, you will need to pass options, see
+{{{
+mfoc -h
+}}}
