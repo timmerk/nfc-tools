@@ -11,6 +11,9 @@ DeskNFC is written in C++, depends on KDE4 libs (Qt4) and use [nfcd] D-Bus bindi
 To build DeskNFC, you need to have on your system:
   * CMake (>= 2.6);
   * KDE4 libs (>= 4.3);
+  * [http://libndef.googlecode.com libndef] (>= 1.0.1);
+
+_Required packages for Debian users: cmake qt4-qmake libqt4-dev kdelibs5-dev_
 
 = Build =
 {{{
