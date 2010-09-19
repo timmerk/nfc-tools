@@ -5,7 +5,7 @@ DeskNFC is a KDE4 plasmoid which offer NFC content access.
 
 You can see connected NFC devices, tags which are in field and tags content if available.
 
-DeskNFC is written in C++, depends on KDE4 libs (Qt4) and use [nfcd] D-Bus bindings.
+DeskNFC is written in C++, depends on KDE4 libs (Qt4) and use [nfcd NFCd] D-Bus bindings.
 
 = Requirements =
 To build DeskNFC, you need to have on your system:
@@ -19,16 +19,13 @@ _Required packages for Debian users: cmake qt4-qmake libqt4-dev kdelibs5-dev_
 {{{
 svn checkout http://nfc-tools.googlecode.com/svn/trunk/desknfc desknfc
 cd desknfc
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr
-make
+( mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=`kde4-config --prefix` && make )
 }}}
 
 = Installation =
 If it works fine, you can install it:
 {{{
-sudo make install
+( cd build && sudo make install )
 }}}
 
 Now you can put it on your desktop from the plasmoid adding menu of KDE4.
