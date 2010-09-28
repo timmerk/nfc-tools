@@ -14,7 +14,7 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 <tr><td>MIFARE DESFire 2k</td><td style="background-color: #ffaaaa">Supported</td></tr>
 <tr><td>MIFARE DESFire 4k</td>   <td style="background-color: #ffffaa">Supported</td></tr>
 <tr><td>MIFARE DESFire 8k</td><td style="background-color: #ffaaaa">Supported</td></tr>
-<tr><td>MIFARE DESFire EV1</td><td style="background-color: #ffaaaa">No AES support</td></tr>
+<tr><td>MIFARE DESFire EV1</td><td style="background-color: #ffaaaa">Partial / WIP</td></tr>
 <tr><td>MIFARE Mini</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
 <tr><td>MIFARE Plus S 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
 <tr><td>MIFARE Plus S 4k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
