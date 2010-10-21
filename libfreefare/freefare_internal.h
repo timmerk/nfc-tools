@@ -120,7 +120,11 @@ void		 mifare_cbc_des (MifareDESFireKey key, uint8_t *data, size_t data_size, Mi
 void		 rol8(uint8_t *data);
 void		*assert_crypto_buffer_size (MifareTag tag, size_t nbytes);
 
-#define MIFARE_ULTRALIGHT_PAGE_COUNT 16
+#define MIFARE_ULTRALIGHT_PAGE_COUNT  0x10
+#define MIFARE_ULTRALIGHT_C_PAGE_COUNT 0x30
+#define MIFARE_ULTRALIGHT_C_PAGE_COUNT_READ 0x2B
+// Max PAGE_COUNT of the Ultralight Family:
+#define MIFARE_ULTRALIGHT_MAX_PAGE_COUNT 0x30
 
 struct supported_tag {
     enum mifare_tag_type type;
@@ -128,6 +132,7 @@ struct supported_tag {
     uint8_t SAK;
     uint8_t ATS_length;
     uint8_t ATS[5];
+    bool (*check_tag_on_reader) (nfc_device_t *, nfc_iso14443a_info_t);
 };
 
 /*
@@ -195,8 +200,8 @@ struct mifare_ultralight_tag {
     struct mifare_tag __tag;
 
     /* mifare_ultralight_read() reads 4 pages at a time (wrapping) */
-    MifareUltralightPage cache[MIFARE_ULTRALIGHT_PAGE_COUNT + 3];
-    uint8_t cached_pages[MIFARE_ULTRALIGHT_PAGE_COUNT];
+    MifareUltralightPage cache[MIFARE_ULTRALIGHT_MAX_PAGE_COUNT + 3];
+    uint8_t cached_pages[MIFARE_ULTRALIGHT_MAX_PAGE_COUNT];
 };
 
 /*
@@ -210,7 +215,9 @@ struct mifare_ultralight_tag {
 
 #define ASSERT_MIFARE_CLASSIC(tag) do { if ((tag->tag_info->type != CLASSIC_1K) && (tag->tag_info->type != CLASSIC_4K)) return errno = ENODEV, -1; } while (0)
 #define ASSERT_MIFARE_DESFIRE(tag) do { if (tag->tag_info->type != DESFIRE) return errno = ENODEV, -1; } while (0)
-#define ASSERT_MIFARE_ULTRALIGHT(tag) do { if (tag->tag_info->type != ULTRALIGHT) return errno = ENODEV, -1; } while (0)
+#define IS_MIFARE_ULTRALIGHT_C(tag) (tag->tag_info->type == ULTRALIGHT_C)
+#define ASSERT_MIFARE_ULTRALIGHT(tag) do { if ((tag->tag_info->type != ULTRALIGHT) && (! IS_MIFARE_ULTRALIGHT_C(tag))) return errno = ENODEV, -1; } while (0)
+#define ASSERT_MIFARE_ULTRALIGHT_C(tag) do { if (! IS_MIFARE_ULTRALIGHT_C(tag)) return errno = ENODEV, -1; } while (0)
 
 /* 
  * MifareTag cast macros 
