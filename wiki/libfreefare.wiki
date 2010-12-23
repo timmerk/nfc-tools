@@ -1,36 +1,33 @@
 #summary Library for high level manipulation of MIFARE cards.
-#labels Featured
+#labels Featured,Phase-Support
 
 = Introduction =
 
 The _libfreefare_ project aims to provide a convenient API for MIFARE card manipulations.
 
 = Feature matrix =
+== Tags ==
+|| MIFARE Classic 1k || Supported ||
+|| MIFARE Classic 4k || Supported ||
+|| MIFARE DESFire 2k || Supported ||
+|| MIFARE DESFire 4k || Supported ||
+|| MIFARE DESFire 8k || Supported ||
+|| MIFARE DESFire EV1 || In trunk ||
+|| MIFARE Mini || Not supported (no hardware) ||
+|| MIFARE Plus S 2k || Not supported (no hardware) ||
+|| MIFARE Plus S 4k || Not supported (no hardware) ||
+|| MIFARE Plus X 2k || Not supported (no hardware) ||
+|| MIFARE Plus X 4k || Not supported (no hardware) ||
+|| MIFARE Ultralight || Supported ||
+|| MIFARE Ultralight C || WIP ||
 
-<table>
-<tr><th colspan="2">Tags</th></tr>
-<tr><td>MIFARE Classic 1k</td><td style="background-color: #aaffaa">Supported</td></tr>
-<tr><td>MIFARE Classic 4k</td><td style="background-color: #ffffaa">Supported</td></tr>
-<tr><td>MIFARE DESFire 2k</td><td style="background-color: #ffaaaa">Supported</td></tr>
-<tr><td>MIFARE DESFire 4k</td>   <td style="background-color: #ffffaa">Supported</td></tr>
-<tr><td>MIFARE DESFire 8k</td><td style="background-color: #ffaaaa">Supported</td></tr>
-<tr><td>MIFARE DESFire EV1</td><td style="background-color: #ffaaaa">Partial / WIP</td></tr>
-<tr><td>MIFARE Mini</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
-<tr><td>MIFARE Plus S 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
-<tr><td>MIFARE Plus S 4k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
-<tr><td>MIFARE Plus X 2k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
-<tr><td>MIFARE Plus X 4k</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
-<tr><td>MIFARE Ultralight</td><td style="background-color: #aaffaa">Supported</td></tr>
-<tr><td>MIFARE Ultralight C</td><td style="background-color: #ffaaaa">Not supported (no hardware)</td></tr>
-
-<tr><th colspan="2">Support</th></tr>
-<tr><td>Mifare Application Directory (MAD) v1</td><td style="background-color: #aaffaa">Supported</td></tr>
-<tr><td>Mifare Application Directory (MAD) v2</td><td style="background-color: #ffffaa">Supported</td></tr>
-<tr><td>Mifare Application Directory (MAD) v3</td><td style="background-color: #ffaaaa">Supported (part of Mifare DESFire support)</td></tr>
-</table>
+== Specifications ==
+|| Mifare Application Directory (MAD) v1 || Supported ||
+|| Mifare Application Directory (MAD) v2 || Supported ||
+|| Mifare Application Directory (MAD) v3 || Supported (part of Mifare DESFire support) ||
 
 = Installation =
-ATM, you will need to compile development version since there is no release of libfreefare yet.
+You can use released version (see *Download* section) or develoment version:
 
 First you have to checkout sources:
 {{{
