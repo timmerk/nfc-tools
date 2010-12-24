@@ -27,7 +27,7 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 || Mifare Application Directory (MAD) v3 || Supported (part of Mifare DESFire support) ||
 
 = Installation =
-You can use released version (see *Download* section) or develoment version:
+You can use released version (see *Download* section) or development version:
 
 First you have to checkout sources:
 {{{
@@ -61,7 +61,7 @@ To simply view transfer trace between PCD and PICC:
 make clean all
 }}}
 
-To debug a example (e.g. mifare-classic-write-ndef), you need to run the following command:
+To debug an example (e.g. mifare-classic-write-ndef), you need to run the following command:
 {{{
 libtool --mode=execute gdb examples/mifare-classic-write-ndef
 }}}
