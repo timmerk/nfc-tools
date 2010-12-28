@@ -19,7 +19,7 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 || MIFARE Plus X 2k || Not supported (no hardware) ||
 || MIFARE Plus X 4k || Not supported (no hardware) ||
 || MIFARE Ultralight || Supported ||
-|| MIFARE Ultralight C || WIP ||
+|| MIFARE UltralightC || In trunk ||
 
 == Specifications ==
 || Mifare Application Directory (MAD) v1 || Supported ||
