@@ -12,14 +12,14 @@ The _libfreefare_ project aims to provide a convenient API for MIFARE card manip
 || MIFARE DESFire 2k || Supported ||
 || MIFARE DESFire 4k || Supported ||
 || MIFARE DESFire 8k || Supported ||
-|| MIFARE DESFire EV1 || In trunk ||
+|| MIFARE DESFire EV1 || Supported ||
 || MIFARE Mini || Not supported (no hardware) ||
 || MIFARE Plus S 2k || Not supported (no hardware) ||
 || MIFARE Plus S 4k || Not supported (no hardware) ||
 || MIFARE Plus X 2k || Not supported (no hardware) ||
 || MIFARE Plus X 4k || Not supported (no hardware) ||
 || MIFARE Ultralight || Supported ||
-|| MIFARE UltralightC || In trunk ||
+|| MIFARE UltralightC || Supported ||
 
 == Specifications ==
 || Mifare Application Directory (MAD) v1 || Supported ||
