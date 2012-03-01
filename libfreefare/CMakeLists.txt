@@ -1,53 +1,35 @@
 # $Id$
-project(libfreefare C)
-cmake_minimum_required(VERSION 2.6)
+set(LIBRARY_SOURCES
+		freefare
+		freefare_internal
+		mad
+		mifare_application
+		mifare_classic
+		mifare_desfire
+		mifare_desfire_aid
+		mifare_desfire_crypto
+		mifare_desfire_error
+		mifare_desfire_key
+		mifare_ultralight
+		tlv
+		../contrib/libutil/hexdump
+		)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_definitions("-std=c99")
+add_library(freefare SHARED ${LIBRARY_SOURCES})
+target_link_libraries(freefare ${LIBS})
 
-find_package(LIBNFC REQUIRED)
-find_package(OpenSSL REQUIRED)
+set(installheaders freefare.h)
+install(FILES ${installheaders} DESTINATION ${INCLUDE_INSTALL_DIR}/freefare COMPONENT headers)
 
-IF(WIN32)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/config_windows.h.cmake ${CMAKE_CURRENT_SOURCE_DIR}/config.h)
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/contrib/win32)
-  find_library(WINSOCK_LIB libws2_32.a)
-  set(LIBS ${LIBS} ${WINSOCK_LIB})
-ENDIF(WIN32)
+if(WIN32)
+  # On Windows the shared (runtime) library should be either in the same
+  # directory as the excutables or in the path, we add it to same directory
+  install(TARGETS freefare RUNTIME DESTINATION bin COMPONENT libraries)
 
-if(MINGW)
-  # force MinGW-w64 in 32bit mode
-  add_definitions("-m32")
-  set(CMAKE_SHARED_LINKER_FLAGS -m32)
-  set(CMAKE_EXE_LINKER_FLAGS -m32)
-endif(MINGW)
-
-message("CMAKE_C_FLAGS: " ${CMAKE_C_FLAGS})
-message("CMAKE_SHARED_LINKER_FLAGS: " ${CMAKE_SHARED_LINKER_FLAGS})
-
-include_directories(${LIBNFC_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/contrib/libutil)
-set(LIBS ${LIBS} ${LIBNFC_LIBRARIES} ${OPENSSL_LIBRARIES})
-
-option(WITH_DEBUG "Extra debug information is outputted when this is turned on" OFF)
-
-if(DEFINED CMAKE_INSTALL_LIBDIR)
-  set(libdir ${CMAKE_INSTALL_LIBDIR})
-else(DEFINED CMAKE_INSTALL_LIBDIR)
-  set(CMAKE_INSTALL_LIBDIR lib)
-  set(libdir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
-endif(DEFINED CMAKE_INSTALL_LIBDIR)
-
-if(DEFINED INCLUDE_INSTALL_DIR)
-  set(includedir ${INCLUDE_INSTALL_DIR})
-else(DEFINED INCLUDE_INSTALL_DIR)
-  set(INCLUDE_INSTALL_DIR include)
-  set(includedir ${CMAKE_INSTALL_PREFIX}/${INCLUDE_INSTALL_DIR})
-endif(DEFINED INCLUDE_INSTALL_DIR)
-
-if(NOT DEFINED SHARE_INSTALL_PREFIX)
-  set(SHARE_INSTALL_PREFIX share)
-endif(NOT DEFINED SHARE_INSTALL_PREFIX)
-
-add_subdirectory(libfreefare)
-add_subdirectory(examples)
+  # At compile time we need the .LIB file, we place it in the lib directory
+  install(TARGETS freefare ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT headers)
+else(WIN32)
+  install(TARGETS freefare LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT libraries)
+endif(WIN32)
