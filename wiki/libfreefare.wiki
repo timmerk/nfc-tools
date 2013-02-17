@@ -1,2 +1,0 @@
-#labels Featured,Phase-Support
-Libfreefare has been moved to https://code.google.com/p/libfreefare/
